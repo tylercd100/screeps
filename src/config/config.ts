@@ -18,6 +18,12 @@ export const USE_PROFILER: boolean = true;
 export const DEFAULT_MIN_LIFE_BEFORE_NEEDS_REFILL: number = 300;
 
 /**
+ * Minimum number of ticksToLive for a Creep to be considered full.
+ * @type {number}
+ */
+export const DEFAULT_MIN_LIFE_TO_BE_FULL: number = 1000;
+
+/**
  * Debug level for log output
  */
 export const LOG_LEVEL: number = LogLevels.DEBUG;
