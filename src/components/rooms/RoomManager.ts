@@ -7,28 +7,50 @@
 
 'use strict';
 
-import {RoomPlan, RoomOnePlan} from "./RoomPlans";
+import {RoomPlan, BaseRoomPlan, AttackRoomPlan, IgnoreRoomPlan} from "./RoomPlans";
+import * as Plans from "./Plans";
+
 
 export class RoomManager {
 	constructor() {}
 
 	run(room: Room) {
-		let plan: RoomPlan;
-		if(!_.get(room, "memory.plan", null)) {
-			_.set(room, "memory.plan", []);
+		let plan: RoomPlan = null;
+		switch(_.get<number>(Plans.rooms, room.name, Plans.IGNORE)) {
+			case Plans.BASE:
+				plan = new BaseRoomPlan(room);
+				break;
+			case Plans.ATTACK:
+				plan = new AttackRoomPlan(room);
+				break;
+			case Plans.IGNORE:
+			default:
+				plan = new IgnoreRoomPlan(room);
+				break;
 		}
-		if(!room.memory.plan[room.controller.level]){
-			switch (room.controller.level) {
-				case 1: {
-					plan = new RoomOnePlan(room);
-				}
-			}
 
-			if (plan) {
-				if(plan.run()){
-					room.memory.plan[room.controller.level] = true
-				}
-			}
+		if(plan) {
+			return plan.run();
 		}
 	}
+
+	// run(room: Room) {
+	// 	let plan: RoomPlan;
+	// 	if(!_.get(room, "memory.plan", null)) {
+	// 		_.set(room, "memory.plan", []);
+	// 	}
+	// 	if(!room.memory.plan[room.controller.level]){
+	// 		switch (room.controller.level) {
+	// 			case 1: {
+	// 				plan = new RoomOnePlan(room);
+	// 			}
+	// 		}
+
+	// 		if (plan) {
+	// 			if(plan.run()){
+	// 				room.memory.plan[room.controller.level] = true
+	// 			}
+	// 		}
+	// 	}
+	// }
 }

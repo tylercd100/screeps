@@ -7,50 +7,37 @@
 
 'use strict';
 
-import {Task, DepositIntoContainer, BuildTask, HarvestTask, RenewTask} from "./../tasks/Tasks";
+import {Task, DepositIntoContainerTask, BuildTask, HarvestTask, RenewTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 
 export class MinerCreep extends BaseCreep {
-    run() {
-
-        this.decrementSleep();
-
-        if (!this.isAsleep()) {
-            let creep = this.creep;
-            let room = creep.room;
-
-            this.setRenewToggle();
-            this.setWorkingToggle();
-
-            let task: Task = Task.fromMemory(creep)
-            
-            if(!task) {
-                if(!creep.memory.working) {
-                    task = new HarvestTask(this.getClosestSource());
-                } else {
-                    var site = this.getClosestConstructionSite();
-                    var container = this.getClosestContainer();
-                    if(container) {
-                        task = new DepositIntoContainer(container, RESOURCE_ENERGY);
-                    } else if (site) {
-                        task = new BuildTask(site);
-                    }
-                }
-
-                if(task) {
-                    console.log(creep.name,"is starting task",task.taskType);
+    protected handle(task: Task): Task {
+        let creep = this.creep;
+        let room = creep.room;
+        
+        if(!task) {
+            if(!creep.memory.working) {
+                task = new HarvestTask(this.getClosestSource());
+            } else {
+                var site = this.getClosestConstructionSite();
+                var container = this.getClosestContainer();
+                if(container) {
+                    task = new DepositIntoContainerTask(container, RESOURCE_ENERGY);
+                } else if (site) {
+                    task = new BuildTask(site);
                 }
             }
 
             if(task) {
-                let result = task.run(creep);
-                if (result === Task.IN_PROGRESS) {
-                    creep.memory.task = task.toMemory();
-                } else {
-                    creep.memory.task = null;
-                }
+                console.log(creep.name,"is starting task",task.taskType);
             }
         }
+
+        return task;  
+    }
+
+    protected draw() {
+        this.creep.room.visual.circle(this.creep.pos, {fill: 'transparent', radius: 0.55, stroke: 'blue'});
     }
 
     static type: string = "miner";

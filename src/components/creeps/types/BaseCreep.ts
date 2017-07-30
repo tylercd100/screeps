@@ -8,9 +8,32 @@
 'use strict';
 
 import * as Config from "./../../../config/config";
+import {Task} from "./../tasks/Tasks";
 
 export abstract class BaseCreep {
-    constructor(protected room: Room, protected creep: Creep) {
+    constructor(protected room: Room, protected creep: Creep) {}
+
+    public run() {
+        this.decrementSleep();
+
+        if (!this.isAsleep()) {
+            this.setRenewToggle();
+            this.setWorkingToggle();
+
+            let task: Task = Task.fromMemory(this.creep)
+            task = this.handle(task);
+
+            if(task) {
+                let result = task.run(this.creep);
+                if (result === Task.IN_PROGRESS) {
+                    this.creep.memory.task = task.toMemory();
+                } else {
+                    this.creep.memory.task = null;
+                }
+            }
+        }
+
+        this.draw();
     }
 
     decrementSleep() {
@@ -54,8 +77,33 @@ export abstract class BaseCreep {
         return this.creep.pos.findClosestByPath<Spawn>(FIND_MY_SPAWNS);
     }
 
+    getClosestTower(): Tower {
+        return this.creep.pos.findClosestByPath<Tower>(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_TOWER}});
+    }
+
     getClosestConstructionSite(): ConstructionSite {
-        return this.creep.pos.findClosestByPath<ConstructionSite>(FIND_CONSTRUCTION_SITES);
+        let priority = [
+            {structureType: STRUCTURE_CONTAINER},
+            {structureType: STRUCTURE_ROAD},
+            {structureType: STRUCTURE_EXTENSION},
+        ];
+
+        let target = null;
+        _.forEach(priority, (options) => {
+            if (!target) {
+                target = this.creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES, {
+                    filter: (x: ConstructionSite) => {
+                        return x.structureType === options.structureType;
+                    }
+                });
+            }
+        });
+
+        if (!target) { 
+            target = this.creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
+        }
+
+        return target;
     }
 
     getClosestDamagedStructure(): Structure {
@@ -65,16 +113,24 @@ export abstract class BaseCreep {
     }
 
     getClosestFillable(): StructureExtension|StructureSpawn|StructureTower {
-        let x = this.creep.room.find<StructureExtension|StructureSpawn|StructureTower>(FIND_STRUCTURES, {
-            filter: (structure: StructureExtension|StructureSpawn|StructureTower) => {
-                const match = (
-                    structure.structureType === STRUCTURE_SPAWN ||
-                    structure.structureType === STRUCTURE_EXTENSION ||
-                    structure.structureType === STRUCTURE_TOWER) && (structure.energy < structure.energyCapacity);
-                return match;
+        let priority = [
+            {structureType: STRUCTURE_SPAWN},
+            {structureType: STRUCTURE_EXTENSION},
+            {structureType: STRUCTURE_TOWER},
+        ];
+
+        let target = null;
+        _.forEach(priority, (options) => {
+            if (!target) {
+                target = this.creep.pos.findClosestByRange<StructureExtension|StructureSpawn|StructureTower>(FIND_STRUCTURES, {
+                    filter: (x: StructureExtension|StructureSpawn|StructureTower) => {
+                        return x.structureType === options.structureType && x.energy < x.energyCapacity;
+                    }
+                });
             }
         });
-        return x.length > 0 ? x[0] : null;
+
+        return target;
     }
 
     getClosestContainer(): StructureContainer {
@@ -108,7 +164,9 @@ export abstract class BaseCreep {
     =            ABSTRACT            =
     ================================*/
 
-    abstract run(): void;
+    protected abstract handle(task: Task): Task;
+    protected abstract draw(): void;
+
 
     /*==============================
     =            STATIC            =
@@ -131,6 +189,6 @@ export abstract class BaseCreep {
     }
 
     static getName(): string {
-        return (Math.ceil(Math.random()*10000));
+        return (Math.ceil(Math.random()*10000))+"";
     }
 }

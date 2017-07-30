@@ -7,53 +7,40 @@
 
 'use strict';
 
-import {Task, WithdrawFromContainer, DepositIntoContainer, RenewTask} from "./../tasks/Tasks";
+import {Task, WithdrawFromContainerTask, DepositIntoContainerTask, RenewTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 
 export class HaulerCreep extends BaseCreep {
-    run() {
-
-        this.decrementSleep();
-
-        if (!this.isAsleep()) {
-            let creep = this.creep;
-            let room = creep.room;
-            let controller = room.controller;
-
-            this.setRenewToggle();
-            this.setWorkingToggle();
-
-            let task: Task = Task.fromMemory(creep)
-            
-            if(!task) {
-                let spawn = this.getClosestSpawn();
-                let containerSpawn: StructureContainer = spawn.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
-                let containerController: StructureContainer = controller.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
-                let containerResources: StructureContainer[] = room.find<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER && s.id !== containerSpawn.id && s.id !== containerController.id});
-                if(!creep.memory.working) {
-                    task = new WithdrawFromContainer(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
+    protected handle(task: Task): Task {
+        let creep = this.creep;
+        let room = creep.room;
+        let controller = room.controller;
+        
+        if(!task) {
+            let spawn = this.getClosestSpawn();
+            let containerSpawn: StructureContainer = spawn.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
+            let containerController: StructureContainer = controller.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
+            let containerResources: StructureContainer[] = room.find<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER && s.id !== containerSpawn.id && s.id !== containerController.id});
+            if(!creep.memory.working) {
+                task = new WithdrawFromContainerTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
+            } else {
+                if(containerSpawn.store[RESOURCE_ENERGY] - 150 <= containerController.store[RESOURCE_ENERGY]) {
+                    task = new DepositIntoContainerTask(containerSpawn);
                 } else {
-                    if(containerSpawn.store[RESOURCE_ENERGY] - 150 <= containerController.store[RESOURCE_ENERGY]) {
-                        task = new DepositIntoContainer(containerSpawn);
-                    } else {
-                        task = new DepositIntoContainer(containerController);
-                    }
-                }
-
-                if(task) {
-                    console.log(creep.name,"is starting task",task.taskType);
+                    task = new DepositIntoContainerTask(containerController);
                 }
             }
 
             if(task) {
-                let result = task.run(creep);
-                if (result === Task.IN_PROGRESS) {
-                    creep.memory.task = task.toMemory();
-                } else {
-                    creep.memory.task = null;
-                }
+                console.log(creep.name,"is starting task",task.taskType);
             }
         }
+
+        return task;
+    }
+
+    protected draw() {
+        this.creep.room.visual.circle(this.creep.pos, {fill: 'transparent', radius: 0.55, stroke: 'purple'});
     }
 
     static type: string = "hauler";

@@ -11,7 +11,13 @@ import * as Config from "./../../../config/config";
 
 export interface ITaskMemory {
 	taskType: string;
-	targetId: string;
+	targetRoom?: string;
+	targetId?: string;
+	targetPos?: {
+		x: number;
+		y: number;
+		roomName: string;
+	};
 	resource: string;
 }
 
@@ -41,13 +47,15 @@ export abstract class Task {
 				case "fill_with_energy":
 					return new FillWithEnergyTask(Game.getObjectById<StructureExtension|StructureSpawn>(m.targetId));
 				case "deposit_into_container":
-					return new DepositIntoContainer(Game.getObjectById<StructureContainer>(m.targetId), m.resource);
+					return new DepositIntoContainerTask(Game.getObjectById<StructureContainer>(m.targetId), m.resource);
 				case "withdraw_from_container":
-					return new WithdrawFromContainer(Game.getObjectById<StructureContainer>(m.targetId), m.resource);
+					return new WithdrawFromContainerTask(Game.getObjectById<StructureContainer>(m.targetId), m.resource);
 				case "build":
 					return new BuildTask(Game.getObjectById<ConstructionSite>(m.targetId));
 				case "upgrade_controller":
 					return new UpgradeControllerTask(Game.getObjectById<StructureController>(m.targetId));
+				case "goto_room_position":
+					return new GotoRoomTask(m.targetRoom);
 				default:
 					console.log("Unknown task type:", m.taskType);
 					return null;
@@ -156,6 +164,105 @@ export class HarvestTask extends Task {
 	}
 }
 
+export class GotoTargetTask extends Task {
+	public taskType: string = "harvest";
+	constructor(protected target: Structure | Creep) {
+		super(target);
+	}
+
+	run(creep: Creep): number {
+		let target = this.target;
+
+		if (!target) {
+			return Task.FAILED;
+		}
+
+    	let moveResult = creep.moveTo(target.pos);
+        if (moveResult === ERR_NO_PATH) {
+            return Task.FAILED;
+        }
+
+        return Task.IN_PROGRESS;
+	}
+}
+
+export class AttackTask extends Task {
+	public taskType: string = "harvest";
+	constructor(protected target: Creep|Spawn|Structure) {
+		super(target);
+	}
+
+	run(creep: Creep): number {
+		let target = this.target;
+
+		if (!target) {
+			return Task.FAILED;
+		}
+
+		let result = creep.attack(target);
+
+		switch (result) {
+			case OK:
+				return Task.IN_PROGRESS;
+			case ERR_NOT_IN_RANGE:
+				let moveResult = creep.moveTo(target.pos);
+	            if (moveResult === ERR_NO_PATH) {
+	                return Task.FAILED;
+	            }
+				return Task.IN_PROGRESS;
+			default:
+				return Task.IN_PROGRESS;
+		}
+	}
+}
+
+export class GotoRoomTask extends Task {
+	public taskType: string = "goto_room_position";
+	constructor(protected target: string) {
+		super(target);
+	}
+
+	run(creep: Creep): number {
+		let pos = new RoomPosition(24,24,this.target);
+
+		if (!pos) {
+			return Task.FAILED;
+		}
+
+		// if(_.indexOf(pos.lookFor(LOOK_TERRAIN), "wall") >=0 ) {
+		// 	return Task.FAILED;
+		// }
+
+		if (creep.room.name === pos.roomName) {
+			creep.move(creep.pos.getDirectionTo(pos));
+			return Task.DONE;
+		}
+
+
+		let x = creep.moveTo(pos, {reusePath: 10});
+		if(x === ERR_NO_PATH) {
+			x = creep.move(creep.pos.getDirectionTo(pos));
+		}
+    	switch (x) {
+    		case OK:
+    			break;
+    		case ERR_NO_PATH:
+    			return Task.FAILED;
+    		default:
+        		return Task.IN_PROGRESS;
+    	}
+
+	}
+
+	public toMemory(): ITaskMemory {
+		return {
+			targetRoom: this.target,
+			taskType: this.taskType,
+			resource: this.resource,
+		}
+	}
+}
+
 export class FillWithEnergyTask extends Task {
 	public taskType: string = "fill_with_energy";
 	constructor(protected target: StructureExtension|StructureSpawn|StructureTower) {
@@ -183,7 +290,7 @@ export class FillWithEnergyTask extends Task {
 	}
 }
 
-export class WithdrawFromContainer extends Task {
+export class WithdrawFromContainerTask extends Task {
 	public taskType: string = "withdraw_from_container";
 	constructor(protected target: StructureContainer, protected resource: string = RESOURCE_ENERGY) {
 		super(target);
@@ -210,7 +317,7 @@ export class WithdrawFromContainer extends Task {
 	}
 }
 
-export class DepositIntoContainer extends Task {
+export class DepositIntoContainerTask extends Task {
 	public taskType: string = "deposit_into_container";
 	constructor(protected target: StructureContainer, protected resource: string = RESOURCE_ENERGY) {
 		super(target);

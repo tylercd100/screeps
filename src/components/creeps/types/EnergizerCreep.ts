@@ -7,55 +7,58 @@
 
 'use strict';
 
-import {Task, WithdrawFromContainer, HarvestTask, RenewTask, FillWithEnergyTask} from "./../tasks/Tasks";
+import {Task, WithdrawFromContainerTask, HarvestTask, GotoTargetTask, FillWithEnergyTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 
 export class EnergizerCreep extends BaseCreep {
-    run() {
+    protected handle(task: Task): Task {
 
-        this.decrementSleep();
+        let creep = this.creep;
+        let spawn = this.getClosestSpawn();
+        let containers = this.getContainers();
+        let containerSpawn: StructureContainer = spawn.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
 
-        if (!this.isAsleep()) {
-            let creep = this.creep;
-            let room = creep.room;
-            let spawn = this.getClosestSpawn();
-            let container = this.getClosestContainerWithResource(RESOURCE_ENERGY);
+        if(!task) {
+            if(!creep.memory.working) {
 
-            this.setRenewToggle();
-            this.setWorkingToggle();
-
-            let task: Task = Task.fromMemory(creep)
-            
-            if(!task) {
-                if(!creep.memory.working) {
-                    if (container) {
-                        task = new WithdrawFromContainer(container, RESOURCE_ENERGY);
-                    } else {
-                        task = new HarvestTask(this.getClosestSource());
-                    }
+                if (containers.length === 0) {
+                    task = new HarvestTask(this.getClosestSource());
+                } else if (containerSpawn) {
+                    task = new WithdrawFromContainerTask(containerSpawn, RESOURCE_ENERGY);
                 } else {
-                    let fillable = this.getClosestFillable()
-                    if(fillable) {
-                        task = new FillWithEnergyTask(fillable);
+                    let spawn = this.getClosestSpawn();
+                    task = new GotoTargetTask(spawn);
+                }
+            } else {
+                let fillable;
+                if(creep.room.energyAvailable < 300) {
+                    fillable = this.getClosestSpawn();
+                } else {
+                    let tower = this.getClosestTower();
+                    if(tower.energy < 300) {
+                        fillable = tower;
                     } else {
-                        this.setSleep(25);
+                        fillable = this.getClosestFillable()
                     }
                 }
 
-                if(task) {
-                    console.log(creep.name,"is starting task",task.taskType);
+                if(fillable) {
+                    task = new FillWithEnergyTask(fillable);
+                } else {
+                    this.setSleep(25);
                 }
             }
 
             if(task) {
-                let result = task.run(creep);
-                if (result === Task.IN_PROGRESS) {
-                    creep.memory.task = task.toMemory();
-                } else {
-                    creep.memory.task = null;
-                }
+                console.log(creep.name,"is starting task",task.taskType);
             }
         }
+
+        return task;
+    }
+
+    protected draw() {
+        this.creep.room.visual.circle(this.creep.pos, {fill: 'transparent', radius: 0.55, stroke: 'yellow'});
     }
 
     static type: string = "energizer";

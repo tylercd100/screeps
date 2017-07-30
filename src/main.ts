@@ -1,4 +1,5 @@
 import {CreepManager} from "./components/creeps/creepManager";
+import {TowerManager} from "./components/towers/TowerManager";
 import {RoomManager} from "./components/rooms/RoomManager";
 import * as Config from "./config/config";
 
@@ -30,20 +31,18 @@ function mloop() {
   for (const i in Game.rooms) {
     const room: Room = Game.rooms[i];
 
-    (new RoomManager()).run(room);
-    (new CreepManager()).run(room);
-
     // Clears any non-existing creep memory.
     for (const name in Memory.creeps) {
-      const creep: any = Memory.creeps[name];
-
-      if (creep.room === room.name || !creep.room) {
-        if (!Game.creeps[name]) {
-          log.info("Clearing non-existing creep memory:", name);
-          delete Memory.creeps[name];
-        }
+      if (!Game.creeps[name]) {
+        log.info("Clearing non-existing creep memory:", name);
+        delete Memory.creeps[name];
       }
     }
+
+    (new RoomManager()).run(room);
+    // (new CreepManager()).run(room);
+    (new TowerManager()).run(room);
+
   }
 }
 
