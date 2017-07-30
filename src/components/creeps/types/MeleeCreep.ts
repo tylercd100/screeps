@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 10:48:41
+* @Last Modified time: 2017-07-29 23:04:44
 */
 
 'use strict';
@@ -42,7 +42,7 @@ export class MeleeCreep extends BaseCreep {
                 if(roomName && roomName === creep.room.name) {
                     // roomName = new RoomPosition(_.random(0, 49),_.random(0, 49),creep.room.name);
                 }
-                if(roomName && roomName !== creep.room.name){
+                if(roomName){
                     task = new GotoRoomTask(roomName);
                 }
             }

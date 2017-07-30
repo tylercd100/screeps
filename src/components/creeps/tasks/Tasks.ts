@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-27 16:58:47
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 09:22:29
+* @Last Modified time: 2017-07-29 23:02:00
 */
 
 'use strict';
@@ -233,7 +233,7 @@ export class GotoRoomTask extends Task {
 		// 	return Task.FAILED;
 		// }
 
-		if (creep.room.name === pos.roomName) {
+		if (creep.room.name === pos.roomName && pos.x !== 49 && pos.y !== 49 && pos.x !== 0 && pos.y !==0) {
 			creep.move(creep.pos.getDirectionTo(pos));
 			return Task.DONE;
 		}
