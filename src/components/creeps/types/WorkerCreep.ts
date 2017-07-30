@@ -27,7 +27,7 @@ export class WorkerCreep extends BaseCreep {
                     task = new HarvestTask(this.getClosestSource());
                 }
             } else {
-                if (room.energyAvailable < room.energyCapacityAvailable && creeps.length <= 8) {
+                if (room.energyAvailable < room.energyCapacityAvailable && (energizers.length === 0 || creeps.length <= 8)) {
                     task = new FillWithEnergyTask(this.getClosestFillable());
                 } else if (controller.ticksToDowngrade < 2000 || controller.level < 2) {
                     task = new UpgradeControllerTask(controller);
@@ -45,10 +45,6 @@ export class WorkerCreep extends BaseCreep {
                     }
                 }
             }
-
-            if(task) {
-                console.log(creep.name,"is starting task",task.taskType);
-            }
         }
 
         return task;
@@ -64,12 +60,12 @@ export class WorkerCreep extends BaseCreep {
         const spawn = WorkerCreep.getSpawn(room);
         const body = WorkerCreep.getBody(room, level);
         const name = WorkerCreep.getName();
-        const memory = WorkerCreep.getMemory();
+        const memory = WorkerCreep.getMemory(room);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(), {
+    static getMemory(room: Room): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(room), {
             type: WorkerCreep.type,
         });
     }

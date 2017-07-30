@@ -27,10 +27,6 @@ export class MinerCreep extends BaseCreep {
                     task = new BuildTask(site);
                 }
             }
-
-            if(task) {
-                console.log(creep.name,"is starting task",task.taskType);
-            }
         }
 
         return task;  
@@ -46,12 +42,12 @@ export class MinerCreep extends BaseCreep {
         const spawn = MinerCreep.getSpawn(room);
         const body = MinerCreep.getBody(room, level);
         const name = MinerCreep.getName();
-        const memory = MinerCreep.getMemory();
+        const memory = MinerCreep.getMemory(room);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(), {
+    static getMemory(room: Room): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(room), {
             type: MinerCreep.type,
         });
     }

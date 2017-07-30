@@ -7,7 +7,7 @@
 
 'use strict';
 
-import {RoomPlan, BaseRoomPlan, AttackRoomPlan, IgnoreRoomPlan} from "./RoomPlans";
+import {RoomPlan, BaseRoomPlan, AttackRoomPlan, IgnoreRoomPlan, HarvestSourcesRoomPlan} from "./RoomPlans";
 import * as Plans from "./Plans";
 
 
@@ -22,6 +22,9 @@ export class RoomManager {
 				break;
 			case Plans.ATTACK:
 				plan = new AttackRoomPlan(room);
+				break;
+			case Plans.HARVEST_SOURCES:
+				plan = new HarvestSourcesRoomPlan(room);
 				break;
 			case Plans.IGNORE:
 			default:

@@ -33,6 +33,10 @@ function mloop() {
 
     // Clears any non-existing creep memory.
     for (const name in Memory.creeps) {
+      if (Game.creeps[name] && !Game.creeps[name].memory.room) {
+        Game.creeps[name].memory.room = "W77N32";
+      }
+
       if (!Game.creeps[name]) {
         log.info("Clearing non-existing creep memory:", name);
         delete Memory.creeps[name];

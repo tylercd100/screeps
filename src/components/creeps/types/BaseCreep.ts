@@ -9,6 +9,7 @@
 
 import * as Config from "./../../../config/config";
 import {Task} from "./../tasks/Tasks";
+import * as Plans from "./../../rooms/Plans";
 
 export abstract class BaseCreep {
     constructor(protected room: Room, protected creep: Creep) {}
@@ -20,13 +21,19 @@ export abstract class BaseCreep {
             this.setRenewToggle();
             this.setWorkingToggle();
 
-            let task: Task = Task.fromMemory(this.creep)
-            task = this.handle(task);
+            let oldTask: Task = Task.fromMemory(this.creep)
 
-            if(task) {
-                let result = task.run(this.creep);
+            let newTask: Task = this.handle(oldTask);
+
+
+            if(newTask) {
+                if(_.get(newTask, "taskType") !== _.get(oldTask, "taskType")) {
+                    console.log(this.creep.name,"is starting task",newTask.taskType);
+                }
+                
+                let result = newTask.run(this.creep);
                 if (result === Task.IN_PROGRESS) {
-                    this.creep.memory.task = task.toMemory();
+                    this.creep.memory.task = newTask.toMemory();
                 } else {
                     this.creep.memory.task = null;
                 }
@@ -160,6 +167,16 @@ export abstract class BaseCreep {
         })
     }
 
+    protected getRoom(targetPlan: number): string {
+        for (const name in Plans.rooms) {
+            let x = Plans.rooms[name];
+            if (x === targetPlan) {
+                return name;
+            }
+        }
+        return null;
+    }
+
     /*================================
     =            ABSTRACT            =
     ================================*/
@@ -184,8 +201,8 @@ export abstract class BaseCreep {
         return null;
     }
 
-    static getMemory(): {[key: string]: any} {
-        return {};
+    static getMemory(room: Room): {[key: string]: any} {
+        return {room: room.name};
     }
 
     static getName(): string {

@@ -48,10 +48,6 @@ export class EnergizerCreep extends BaseCreep {
                     this.setSleep(25);
                 }
             }
-
-            if(task) {
-                console.log(creep.name,"is starting task",task.taskType);
-            }
         }
 
         return task;
@@ -67,12 +63,12 @@ export class EnergizerCreep extends BaseCreep {
         const spawn = EnergizerCreep.getSpawn(room);
         const body = EnergizerCreep.getBody(room, level);
         const name = EnergizerCreep.getName();
-        const memory = EnergizerCreep.getMemory();
+        const memory = EnergizerCreep.getMemory(room);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(), {
+    static getMemory(room: Room): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(room), {
             type: EnergizerCreep.type,
         });
     }

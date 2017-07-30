@@ -93,7 +93,7 @@ export class BuildTask extends Task {
 
 		let code = creep.build(target);
         if (code === ERR_NOT_IN_RANGE) {
-            if (creep.moveTo(target.pos) === ERR_NO_PATH) {
+            if (creep.moveTo(target.pos, {reusePath: 10}) === ERR_NO_PATH) {
                 return Task.FAILED;
             }
         } else if (code !== OK) {
@@ -123,7 +123,7 @@ export class RepairTask extends Task {
 
 		let code = creep.repair(target);
         if (code === ERR_NOT_IN_RANGE) {
-            if (creep.moveTo(target.pos) === ERR_NO_PATH) {
+            if (creep.moveTo(target.pos, {reusePath: 10}) === ERR_NO_PATH) {
                 return Task.FAILED;
             }
         } else if (code !== OK) {
@@ -153,7 +153,7 @@ export class HarvestTask extends Task {
 
 		let harvestResult = creep.harvest(target);
         if (harvestResult === ERR_NOT_IN_RANGE) {
-        	let moveResult = creep.moveTo(target.pos);
+        	let moveResult = creep.moveTo(target.pos, {reusePath: 10});
             if (moveResult === ERR_NO_PATH) {
                 return Task.FAILED;
             }
@@ -177,7 +177,7 @@ export class GotoTargetTask extends Task {
 			return Task.FAILED;
 		}
 
-    	let moveResult = creep.moveTo(target.pos);
+    	let moveResult = creep.moveTo(target.pos, {reusePath: 10});
         if (moveResult === ERR_NO_PATH) {
             return Task.FAILED;
         }
@@ -281,7 +281,7 @@ export class FillWithEnergyTask extends Task {
 		}
 
         if (creep.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-            if (creep.moveTo(target.pos) === ERR_NO_PATH) {
+            if (creep.moveTo(target.pos, {reusePath: 10}) === ERR_NO_PATH) {
                 return Task.FAILED;
             }
         }
@@ -308,7 +308,7 @@ export class WithdrawFromContainerTask extends Task {
 		}
 
         if (creep.withdraw(target, this.resource) === ERR_NOT_IN_RANGE) {
-            if (creep.moveTo(target.pos) === ERR_NO_PATH) {
+            if (creep.moveTo(target.pos, {reusePath: 10}) === ERR_NO_PATH) {
                 return Task.FAILED;
             }
         }
@@ -335,7 +335,7 @@ export class DepositIntoContainerTask extends Task {
 		}
 
         if (creep.transfer(target, this.resource) === ERR_NOT_IN_RANGE) {
-            if (creep.moveTo(target.pos) === ERR_NO_PATH) {
+            if (creep.moveTo(target.pos, {reusePath: 10}) === ERR_NO_PATH) {
                 return Task.FAILED;
             }
         }
@@ -363,7 +363,7 @@ export class RenewTask extends Task {
 
 		let result = target.renewCreep(creep);
         if (result === ERR_NOT_IN_RANGE) {
-            if (creep.moveTo(target.pos) === ERR_NO_PATH) {
+            if (creep.moveTo(target.pos, {reusePath: 10}) === ERR_NO_PATH) {
             	creep.memory.renew = false;
                 return Task.FAILED;
             }
@@ -394,7 +394,7 @@ export class UpgradeControllerTask extends Task {
 		}
 
         if (creep.transfer(target, RESOURCE_ENERGY) === ERR_NOT_IN_RANGE) {
-            if (creep.moveTo(target) === ERR_NO_PATH) {
+            if (creep.moveTo(target, {reusePath: 10}) === ERR_NO_PATH) {
                 return Task.FAILED;
             }
         }

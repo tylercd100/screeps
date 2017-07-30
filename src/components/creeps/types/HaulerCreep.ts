@@ -30,10 +30,6 @@ export class HaulerCreep extends BaseCreep {
                     task = new DepositIntoContainerTask(containerController);
                 }
             }
-
-            if(task) {
-                console.log(creep.name,"is starting task",task.taskType);
-            }
         }
 
         return task;
@@ -49,12 +45,12 @@ export class HaulerCreep extends BaseCreep {
         const spawn = HaulerCreep.getSpawn(room);
         const body = HaulerCreep.getBody(room, level);
         const name = HaulerCreep.getName();
-        const memory = HaulerCreep.getMemory();
+        const memory = HaulerCreep.getMemory(room);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(), {
+    static getMemory(room: Room): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(room), {
             type: HaulerCreep.type,
         });
     }
