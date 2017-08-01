@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:51:45
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-31 10:20:09
+* @Last Modified time: 2017-08-01 08:06:14
 */
 
 'use strict';
@@ -120,18 +120,17 @@ export abstract class BaseCreep {
         });
     }
 
-    getClosestFillable(): StructureExtension|StructureSpawn|StructureTower {
+    getClosestFillable(): StructureExtension|StructureSpawn {
         let priority = [
             {structureType: STRUCTURE_SPAWN},
             {structureType: STRUCTURE_EXTENSION},
-            {structureType: STRUCTURE_TOWER},
         ];
 
         let target = null;
         _.forEach(priority, (options) => {
             if (!target) {
-                target = this.creep.pos.findClosestByRange<StructureExtension|StructureSpawn|StructureTower>(FIND_STRUCTURES, {
-                    filter: (x: StructureExtension|StructureSpawn|StructureTower) => {
+                target = this.creep.pos.findClosestByRange<StructureExtension|StructureSpawn>(FIND_STRUCTURES, {
+                    filter: (x: StructureExtension|StructureSpawn) => {
                         return x.structureType === options.structureType && x.energy < x.energyCapacity;
                     }
                 });
