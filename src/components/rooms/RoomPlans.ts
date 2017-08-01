@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-28 23:45:43
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-31 17:04:38
+* @Last Modified time: 2017-08-01 10:45:49
 */
 
 'use strict';
@@ -129,86 +129,11 @@ export class IgnoreRoomPlan extends RoomPlan {
 
 export class BaseRoomPlan extends RoomPlan {
     protected handle() {
-        this.buildMissingCreeps();
+        
     }
 
     protected handleLayouts() {
     	(new BaseLevelOneRoomLayout(this.room)).run();
-    }
-
-
-    protected buildMissingCreeps() {
-        const spawns: Spawn[] = this.room.find<Spawn>(FIND_MY_SPAWNS, {
-            filter: (spawn: Spawn) => !spawn.spawning
-        });
-
-        const containers: StructureContainer[] = this.room.find<StructureContainer>(FIND_STRUCTURES, {
-            filter: (x: Structure) => x.structureType === STRUCTURE_CONTAINER,
-        });
-
-        if (spawns.length) {
-
-            let melees     = _.filter(Game.creeps, (creep) => {return creep.memory.room === this.room.name && creep.memory.type === "melee"});
-            let workers    = _.filter(Game.creeps, (creep) => {return creep.memory.room === this.room.name && creep.memory.type === "worker"});
-            let miners     = _.filter(Game.creeps, (creep) => {return creep.memory.room === this.room.name && creep.memory.type === "miner"});
-            let haulers    = _.filter(Game.creeps, (creep) => {return creep.memory.room === this.room.name && creep.memory.type === "hauler"});
-            let energizers = _.filter(Game.creeps, (creep) => {return creep.memory.room === this.room.name && creep.memory.type === "energizer"});
-            let harvesters = _.filter(Game.creeps, (creep) => {return creep.memory.room === this.room.name && creep.memory.type === "harvester"});
-
-            let type:string = null;
-
-            if (workers.length < (containers.length > 1 ? 5 : 8)) {
-                type = "worker"
-            }
-            if (workers.length > 0) {
-                if (melees.length < 3) {
-                	type = "melee";
-                }
-                if (harvesters.length < _.filter(_.values(Plans.rooms), (i) => i === Plans.HARVEST_SOURCES).length * 3) {
-                    type = "harvester"
-                }
-                if (haulers.length < Math.ceil(containers.length/2)) {
-                    type = "hauler";
-                }
-                if (miners.length < (containers.length > 1 ? 3 : 0)) {
-                    type = "miner";
-                }
-                if (energizers.length < 1) {
-                    type = "energizer"
-                }
-            }
-
-            let level = this.room.controller.level;
-            let result = null;
-            while (type && level > 0 && !_.isString(result)) {
-                switch(type) {
-                    case "worker":
-                        result = WorkerCreep.createCreep(this.room, level);
-                        break;
-                    case "melee":
-                        result = MeleeCreep.createCreep(this.room, level);
-                        break;
-                    case "miner":
-                        result = MinerCreep.createCreep(this.room, level);
-                        break;
-                    case "hauler":
-                        result = HaulerCreep.createCreep(this.room, level);
-                        break;
-                    case "energizer":
-                        result = EnergizerCreep.createCreep(this.room, level);
-                        break;
-                    case "harvester":
-                        result = HarvesterCreep.createCreep(this.room, level);
-                        break;
-                }
-
-                if (_.isString(result)) {
-                    console.log("Spawning", type, "at level", level);
-                } else {
-                    level--;
-                }
-            }
-        }
     }
 }
 
