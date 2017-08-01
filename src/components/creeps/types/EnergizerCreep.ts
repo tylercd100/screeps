@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-01 09:16:16
+* @Last Modified time: 2017-08-01 13:03:17
 */
 
 'use strict';
@@ -41,7 +41,6 @@ export class EnergizerCreep extends BaseCreep {
                 if(fillable) {
                     task = new FillWithEnergyTask(fillable);
                 } else {
-                    task = new GotoTargetTask(stockpileSpawn);
                     this.setSleep(25);
                 }
             }
