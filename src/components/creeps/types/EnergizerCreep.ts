@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-31 16:51:28
+* @Last Modified time: 2017-08-01 09:16:16
 */
 
 'use strict';
@@ -26,25 +26,22 @@ export class EnergizerCreep extends BaseCreep {
                 } else if (stockpileSpawn) {
                     task = new WithdrawFromStockpileTask(stockpileSpawn, RESOURCE_ENERGY);
                 } else {
-                    let spawn = this.getClosestSpawn();
-                    task = new GotoTargetTask(spawn);
+                    task = new GotoTargetTask(stockpileSpawn);
                 }
             } else {
-                let fillable;
-                if(creep.room.energyAvailable < 300) {
-                    fillable = this.getClosestSpawn();
-                } else {
+                let fillable = this.getClosestFillable();
+
+                if(creep.room.energyAvailable >= 300) {
                     let tower = this.getClosestTower();
                     if((tower.energy < 300 && creep.carryCapacity > 150) || tower.energy < 25) {
                         fillable = tower;
-                    } else {
-                        fillable = this.getClosestFillable()
                     }
                 }
 
                 if(fillable) {
                     task = new FillWithEnergyTask(fillable);
                 } else {
+                    task = new GotoTargetTask(stockpileSpawn);
                     this.setSleep(25);
                 }
             }
