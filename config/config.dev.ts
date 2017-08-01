@@ -5,6 +5,7 @@ import * as CommonConfig from "./config.common";
 import { Credentials, EnvOptions } from "./types";
 
 const ScreepsWebpackPlugin = require("screeps-webpack-plugin");
+const git = require('git-rev-sync');
 
 function webpackConfig(options: EnvOptions = {}): Config {
   // get the common configuration to start with
@@ -12,7 +13,7 @@ function webpackConfig(options: EnvOptions = {}): Config {
 
   // make "dev" specific changes here
   const credentials: Credentials = require("./credentials.json");
-  credentials.branch = "dev";
+  credentials.branch = git.branch();
 
   config.plugin("screeps")
     .use(ScreepsWebpackPlugin, [credentials]);

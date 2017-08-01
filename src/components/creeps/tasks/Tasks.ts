@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-27 16:58:47
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 23:02:00
+* @Last Modified time: 2017-07-31 10:18:38
 */
 
 'use strict';
@@ -47,9 +47,9 @@ export abstract class Task {
 				case "fill_with_energy":
 					return new FillWithEnergyTask(Game.getObjectById<StructureExtension|StructureSpawn>(m.targetId));
 				case "deposit_into_container":
-					return new DepositIntoContainerTask(Game.getObjectById<StructureContainer>(m.targetId), m.resource);
+					return new DepositIntoStockpileTask(Game.getObjectById<StructureContainer|StructureStorage>(m.targetId), m.resource);
 				case "withdraw_from_container":
-					return new WithdrawFromContainerTask(Game.getObjectById<StructureContainer>(m.targetId), m.resource);
+					return new WithdrawFromStockpileTask(Game.getObjectById<StructureContainer|StructureStorage>(m.targetId), m.resource);
 				case "build":
 					return new BuildTask(Game.getObjectById<ConstructionSite>(m.targetId));
 				case "upgrade_controller":
@@ -290,9 +290,9 @@ export class FillWithEnergyTask extends Task {
 	}
 }
 
-export class WithdrawFromContainerTask extends Task {
+export class WithdrawFromStockpileTask extends Task {
 	public taskType: string = "withdraw_from_container";
-	constructor(protected target: StructureContainer, protected resource: string = RESOURCE_ENERGY) {
+	constructor(protected target: StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY) {
 		super(target);
 	}
 
@@ -317,9 +317,9 @@ export class WithdrawFromContainerTask extends Task {
 	}
 }
 
-export class DepositIntoContainerTask extends Task {
+export class DepositIntoStockpileTask extends Task {
 	public taskType: string = "deposit_into_container";
-	constructor(protected target: StructureContainer, protected resource: string = RESOURCE_ENERGY) {
+	constructor(protected target: StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY) {
 		super(target);
 	}
 

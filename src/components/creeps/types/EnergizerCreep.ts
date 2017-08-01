@@ -2,12 +2,12 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 10:48:41
+* @Last Modified time: 2017-07-31 16:51:28
 */
 
 'use strict';
 
-import {Task, WithdrawFromContainerTask, HarvestTask, GotoTargetTask, FillWithEnergyTask} from "./../tasks/Tasks";
+import {Task, WithdrawFromStockpileTask, HarvestTask, GotoTargetTask, FillWithEnergyTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 
 export class EnergizerCreep extends BaseCreep {
@@ -15,16 +15,16 @@ export class EnergizerCreep extends BaseCreep {
 
         let creep = this.creep;
         let spawn = this.getClosestSpawn();
-        let containers = this.getContainers();
-        let containerSpawn: StructureContainer = spawn.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
+        let containers = this.getStockpiles();
+        let stockpileSpawn: StructureContainer|StructureStorage = this.getSpawnStockpile(spawn);
 
         if(!task) {
             if(!creep.memory.working) {
 
                 if (containers.length === 0) {
                     task = new HarvestTask(this.getClosestSource());
-                } else if (containerSpawn) {
-                    task = new WithdrawFromContainerTask(containerSpawn, RESOURCE_ENERGY);
+                } else if (stockpileSpawn) {
+                    task = new WithdrawFromStockpileTask(stockpileSpawn, RESOURCE_ENERGY);
                 } else {
                     let spawn = this.getClosestSpawn();
                     task = new GotoTargetTask(spawn);
@@ -35,7 +35,7 @@ export class EnergizerCreep extends BaseCreep {
                     fillable = this.getClosestSpawn();
                 } else {
                     let tower = this.getClosestTower();
-                    if(tower.energy < 300) {
+                    if((tower.energy < 300 && creep.carryCapacity > 150) || tower.energy < 25) {
                         fillable = tower;
                     } else {
                         fillable = this.getClosestFillable()

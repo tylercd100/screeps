@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:51:45
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 09:18:34
+* @Last Modified time: 2017-07-31 10:20:09
 */
 
 'use strict';
@@ -81,7 +81,7 @@ export abstract class BaseCreep {
     }
 
     getClosestSpawn(): Spawn {
-        return this.creep.pos.findClosestByPath<Spawn>(FIND_MY_SPAWNS);
+        return this.creep.pos.findClosestByRange<Spawn>(FIND_MY_SPAWNS);
     }
 
     getClosestTower(): Tower {
@@ -93,6 +93,7 @@ export abstract class BaseCreep {
             {structureType: STRUCTURE_CONTAINER},
             {structureType: STRUCTURE_ROAD},
             {structureType: STRUCTURE_EXTENSION},
+            {structureType: STRUCTURE_STORAGE},
         ];
 
         let target = null;
@@ -140,30 +141,34 @@ export abstract class BaseCreep {
         return target;
     }
 
-    getClosestContainer(): StructureContainer {
-        return this.creep.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {
-            filter: (structure:Structure) => structure.structureType === STRUCTURE_CONTAINER,
+    getClosestStockpile(): StructureContainer|StructureStorage {
+        return this.creep.pos.findClosestByRange<StructureContainer|StructureStorage>(FIND_STRUCTURES, {
+            filter: (structure:Structure) => structure.structureType === STRUCTURE_CONTAINER || structure.structureType === STRUCTURE_STORAGE,
         })
     }
 
-    getClosestContainerWithResource(resource = RESOURCE_ENERGY): StructureContainer {
-        return this.creep.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {
-            filter: (structure:StructureContainer) => (structure.structureType === STRUCTURE_CONTAINER && structure.store && structure.store[resource] > 0),
+    getClosestStockpileWithResource(resource = RESOURCE_ENERGY): StructureContainer|StructureStorage {
+        return this.creep.pos.findClosestByRange<StructureContainer|StructureStorage>(FIND_STRUCTURES, {
+            filter: (structure:StructureContainer|StructureStorage) => ((structure.structureType === STRUCTURE_CONTAINER || structure.structureType === STRUCTURE_STORAGE) && structure.store && structure.store[resource] > 0),
         })
     }
 
-    getSmallestContainer(resource = RESOURCE_ENERGY): StructureContainer {
-        return _.min(this.getContainers(), (c: StructureContainer) => c.store[resource]);
+    getSmallestStockpile(resource = RESOURCE_ENERGY): StructureContainer|StructureStorage {
+        return _.min(this.getStockpiles(), (c: StructureContainer|StructureStorage) => c.store[resource]);
     }
 
-    getLargestContainer(resource = RESOURCE_ENERGY): StructureContainer {
-        let x = _.max(this.getContainers(), (c: StructureContainer) => c.store[resource]);
+    getLargestStockpile(resource = RESOURCE_ENERGY): StructureContainer|StructureStorage {
+        let x = _.max(this.getStockpiles(), (c: StructureContainer|StructureStorage) => c.store[resource]);
         return x.store[resource] > 0 ? x : null;
     }
 
-    getContainers(): StructureContainer[] {
-        return this.creep.room.find<StructureContainer>(FIND_STRUCTURES, {
-            filter: (structure:Structure) => structure.structureType === STRUCTURE_CONTAINER,
+    getSpawnStockpile(spawn: Spawn): StructureContainer|StructureStorage {
+        return spawn.pos.findClosestByRange<StructureContainer|StructureStorage>(FIND_STRUCTURES, {filter: (s: StructureContainer|StructureStorage) => s.structureType===STRUCTURE_CONTAINER || s.structureType===STRUCTURE_STORAGE});
+    }
+
+    getStockpiles(): (StructureContainer|StructureStorage)[] {
+        return this.creep.room.find<StructureContainer|StructureStorage>(FIND_STRUCTURES, {
+            filter: (structure:Structure) => {return structure.structureType === STRUCTURE_CONTAINER || structure.structureType === STRUCTURE_STORAGE},
         })
     }
 

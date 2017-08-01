@@ -2,12 +2,12 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 10:47:41
+* @Last Modified time: 2017-07-31 10:18:38
 */
 
 'use strict';
 
-import {Task, WithdrawFromContainerTask, DepositIntoContainerTask, RenewTask} from "./../tasks/Tasks";
+import {Task, WithdrawFromStockpileTask, DepositIntoStockpileTask, RenewTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 
 export class HaulerCreep extends BaseCreep {
@@ -18,16 +18,19 @@ export class HaulerCreep extends BaseCreep {
         
         if(!task) {
             let spawn = this.getClosestSpawn();
-            let containerSpawn: StructureContainer = spawn.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
+            let containerSpawn: StructureContainer|StructureStorage = null;
+            if(spawn) {
+                containerSpawn = this.getSpawnStockpile(spawn)
+            }
             let containerController: StructureContainer = controller.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
-            let containerResources: StructureContainer[] = room.find<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER && s.id !== containerSpawn.id && s.id !== containerController.id});
+            let containerResources: StructureContainer[] = room.find<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER && s.id !== _.get(containerSpawn, "id") && s.id !== _.get(containerController, "id")});
             if(!creep.memory.working) {
-                task = new WithdrawFromContainerTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
+                task = new WithdrawFromStockpileTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
             } else {
-                if(containerSpawn.store[RESOURCE_ENERGY] - 150 <= containerController.store[RESOURCE_ENERGY]) {
-                    task = new DepositIntoContainerTask(containerSpawn);
+                if(containerSpawn && containerSpawn.store[RESOURCE_ENERGY] - room.energyCapacityAvailable <= containerController.store[RESOURCE_ENERGY]) {
+                    task = new DepositIntoStockpileTask(containerSpawn);
                 } else {
-                    task = new DepositIntoContainerTask(containerController);
+                    task = new DepositIntoStockpileTask(containerController);
                 }
             }
         }

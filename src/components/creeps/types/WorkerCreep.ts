@@ -2,12 +2,12 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 10:49:32
+* @Last Modified time: 2017-07-31 16:58:50
 */
 
 'use strict';
 
-import {Task, BuildTask, WithdrawFromContainerTask, HarvestTask, FillWithEnergyTask, UpgradeControllerTask} from "./../tasks/Tasks";
+import {Task, BuildTask, WithdrawFromStockpileTask, HarvestTask, FillWithEnergyTask, UpgradeControllerTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 
 export class WorkerCreep extends BaseCreep {
@@ -15,14 +15,14 @@ export class WorkerCreep extends BaseCreep {
         let creep = this.creep;
         let room = creep.room;
         let controller = room.controller;
-        let container = this.getClosestContainerWithResource(RESOURCE_ENERGY);
+        let container = this.getClosestStockpileWithResource(RESOURCE_ENERGY);
         let creeps = room.find<Creep>(FIND_MY_CREEPS);
-        let energizers = room.find<Creep>(FIND_MY_CREEPS, {filter: (creep) => creep.memory.type === "energizer"});
+        let energizers = _.filter(Game.creeps, (x) => {return x.memory.room === creep.room.name && x.memory.type === "energizer"});
         
         if(!task) {
             if(!creep.memory.working) {
                 if (container) {
-                    task = new WithdrawFromContainerTask(container, RESOURCE_ENERGY);
+                    task = new WithdrawFromStockpileTask(container, RESOURCE_ENERGY);
                 } else {
                     task = new HarvestTask(this.getClosestSource());
                 }

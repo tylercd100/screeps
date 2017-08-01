@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-28 23:45:43
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 00:14:26
+* @Last Modified time: 2017-07-31 17:04:38
 */
 
 'use strict';
@@ -27,13 +27,13 @@ export abstract class RoomPlan {
 	}
 
 	run() {
-		this.handleHarvestPoints();
+		this.countHarvestPoints();
     	this.handleLayouts();
         this.handle();
     	this.handleCreeps();
 	}
 
-	protected handleHarvestPoints() {
+	protected countHarvestPoints() {
 		let points = _.get<any[]|null>(this.room, "memory.harvest_points");
 		if (!points) {
 			points = [];
@@ -164,14 +164,14 @@ export class BaseRoomPlan extends RoomPlan {
                 if (melees.length < 3) {
                 	type = "melee";
                 }
+                if (harvesters.length < _.filter(_.values(Plans.rooms), (i) => i === Plans.HARVEST_SOURCES).length * 3) {
+                    type = "harvester"
+                }
                 if (haulers.length < Math.ceil(containers.length/2)) {
                     type = "hauler";
                 }
                 if (miners.length < (containers.length > 1 ? 3 : 0)) {
                     type = "miner";
-                }
-                if (harvesters.length < _.filter(_.values(Plans.rooms), (i) => i === Plans.HARVEST_SOURCES).length * 3) {
-                    type = "harvester"
                 }
                 if (energizers.length < 1) {
                     type = "energizer"

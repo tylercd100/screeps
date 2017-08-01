@@ -2,27 +2,26 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 10:43:24
+* @Last Modified time: 2017-07-31 10:18:48
 */
 
 'use strict';
 
-import {Task, DepositIntoContainerTask, BuildTask, HarvestTask, RenewTask} from "./../tasks/Tasks";
+import {Task, DepositIntoStockpileTask, BuildTask, HarvestTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 
 export class MinerCreep extends BaseCreep {
     protected handle(task: Task): Task {
         let creep = this.creep;
-        let room = creep.room;
         
         if(!task) {
             if(!creep.memory.working) {
                 task = new HarvestTask(this.getClosestSource());
             } else {
                 var site = this.getClosestConstructionSite();
-                var container = this.getClosestContainer();
+                var container = this.getClosestStockpile();
                 if(container) {
-                    task = new DepositIntoContainerTask(container, RESOURCE_ENERGY);
+                    task = new DepositIntoStockpileTask(container, RESOURCE_ENERGY);
                 } else if (site) {
                     task = new BuildTask(site);
                 }

@@ -2,12 +2,12 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 10:47:41
+* @Last Modified time: 2017-07-31 10:18:39
 */
 
 'use strict';
 
-import {Task, BuildTask, HarvestTask, GotoRoomTask, DepositIntoContainerTask} from "./../tasks/Tasks";
+import {Task, BuildTask, HarvestTask, GotoRoomTask, DepositIntoStockpileTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 import * as Plans from "./../../rooms/Plans";
 
@@ -32,10 +32,8 @@ export class HarvesterCreep extends BaseCreep {
                         task = new GotoRoomTask(roomName);
                     }
                 }
-                // task = new WithdrawFromContainerTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
+                // task = new WithdrawFromStockpileTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
             } else {
-
-                this.getClosestConstructionSite
 
                 let roomName;
                 
@@ -45,7 +43,7 @@ export class HarvesterCreep extends BaseCreep {
 
                 if(roomName) {
                     if (creep.room.name === roomName) {
-                        task = new DepositIntoContainerTask(this.getClosestContainer());
+                        task = new DepositIntoStockpileTask(this.getClosestStockpile());
                     } else {
                         task = new GotoRoomTask(roomName);
                     }
