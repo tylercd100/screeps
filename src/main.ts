@@ -1,7 +1,8 @@
-import {CreepManager} from "./components/creeps/creepManager";
-import {TowerManager} from "./components/towers/TowerManager";
-import {RoomManager} from "./components/rooms/RoomManager";
 import * as Config from "./config/config";
+import {NestManager} from "./components/nest/NestManager";
+import {Nest} from "./components/nest/Nest";
+import {RoomManager} from "./components/rooms/RoomManager";
+import {TowerManager} from "./components/towers/TowerManager";
 
 import * as Profiler from "screeps-profiler";
 import { log } from "./lib/logger/log";
@@ -29,26 +30,28 @@ function mloop() {
     Memory.uuid = 0;
   }
 
-  for (const i in Game.rooms) {
-    const room: Room = Game.rooms[i];
-
-    // Clears any non-existing creep memory.
-    for (const name in Memory.creeps) {
-      if (Game.creeps[name] && !Game.creeps[name].memory.room) {
-        Game.creeps[name].memory.room = "W77N32";
-      }
-
-      if (!Game.creeps[name]) {
-        log.info("Clearing non-existing creep memory:", name);
-        delete Memory.creeps[name];
-      }
+  // Clears any non-existing creep memory.
+  for (const name in Memory.creeps) {
+    if (Game.creeps[name] && !Game.creeps[name].memory.room) {
+      Game.creeps[name].memory.room = "W77N32";
     }
 
-    (new RoomManager()).run(room);
-    // (new CreepManager()).run(room);
-    (new TowerManager()).run(room);
-
+    if (!Game.creeps[name]) {
+      log.info("Clearing non-existing creep memory:", name);
+      delete Memory.creeps[name];
+    }
   }
+
+  // Begin here
+  const nestManager = new NestManager(Memory.nests);
+  nestManager.run();
+
+  // for (const i in Game.rooms) {
+  //   const room: Room = Game.rooms[i];
+  //   (new RoomManager()).run(room);
+  //   // (new CreepManager()).run(room);
+  //   (new TowerManager()).run(room);
+  // }
 }
 
 /**
