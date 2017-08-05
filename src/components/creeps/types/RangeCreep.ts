@@ -2,17 +2,17 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-05 00:59:15
+* @Last Modified time: 2017-08-05 01:13:30
 */
 
 'use strict';
 
-import {Task, GotoRoomTask, AttackTask, GotoTargetTask} from "./../tasks/Tasks";
+import {Task, GotoRoomTask, RangedAttackTask, GotoTargetTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 import * as Config from "./../../../config/config";
 import {Nest} from "./../../nest/Nest";
 
-export class MeleeCreep extends BaseCreep {
+export class RangeCreep extends BaseCreep {
     protected handle(task: Task): Task {
 
         let creep = this.creep;
@@ -28,13 +28,17 @@ export class MeleeCreep extends BaseCreep {
                     }
                 })
 
+
                 let enemySpawn = creep.pos.findClosestByRange<Spawn>(FIND_HOSTILE_SPAWNS);
 
                 if ((enemyCreep || enemySpawn) && _.get(creep, "room.controller.safeMode", 0) === 0) {
-                    if(enemySpawn) {
-                        task = new AttackTask(enemySpawn);
-                    } else if (enemyCreep) {
-                        task = new AttackTask(enemyCreep);
+                    console.log("lets start up the task",enemyCreep);
+                    if (enemyCreep) {
+                        task = new RangedAttackTask(enemySpawn);
+                    } else if(enemySpawn) {
+                        task = new RangedAttackTask(enemyCreep);
+                    } else {
+                        task = new GotoTargetTask(new RoomPosition(24, 24, creep.memory.station));
                     }
                 } else if(!task) {
                     let target = this.getFlag("Rally");
@@ -65,23 +69,23 @@ export class MeleeCreep extends BaseCreep {
         this.creep.room.visual.circle(this.creep.pos, {fill: 'transparent', radius: 0.55, stroke: 'red'});
     }
 
-    static type: string = "melee";
+    static type: string = "range";
 
     static createCreep(spawn: Spawn, nest: Nest, level: number = 1): string|number|null {
-        const body = MeleeCreep.getBody(level);
-        const name = MeleeCreep.getName();
-        const memory = MeleeCreep.getMemory(nest);
+        const body = RangeCreep.getBody(level);
+        const name = RangeCreep.getName();
+        const memory = RangeCreep.getMemory(nest);
         return spawn.createCreep(body, name, memory);
     }
 
     static getMemory(nest: Nest): {[key: string]: any} {
         return _.merge(BaseCreep.getMemory(nest), {
-            type: MeleeCreep.type,
+            type: RangeCreep.type,
         });
     }
 
     static getName(): string {
-        return MeleeCreep.type+"-"+BaseCreep.getName();
+        return RangeCreep.type+"-"+BaseCreep.getName();
     }
 
     /**
@@ -99,12 +103,12 @@ export class MeleeCreep extends BaseCreep {
     static getBody(level: number): string[] {
         switch (level) {
             case 1: // 300
-                return [ATTACK, ATTACK, MOVE, MOVE, TOUGH, TOUGH, TOUGH, TOUGH];
             case 2: // 550
+                return [MOVE, RANGED_ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH];
             case 3: // 800
             case 4:
             default:
-                return [ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, TOUGH, TOUGH, TOUGH];
+                return [MOVE, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
         }
     }
 }

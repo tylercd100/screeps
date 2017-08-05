@@ -2,17 +2,17 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:51:45
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-01 08:06:14
+* @Last Modified time: 2017-08-04 11:53:34
 */
 
 'use strict';
 
 import * as Config from "./../../../config/config";
 import {Task} from "./../tasks/Tasks";
-import * as Plans from "./../../rooms/Plans";
+import {Nest} from "./../../nest/Nest";
 
 export abstract class BaseCreep {
-    constructor(protected room: Room, protected creep: Creep) {}
+    constructor(protected creep: Creep) {}
 
     public run() {
         this.decrementSleep();
@@ -21,14 +21,14 @@ export abstract class BaseCreep {
             this.setRenewToggle();
             this.setWorkingToggle();
 
-            let oldTask: Task = Task.fromMemory(this.creep)
+            let oldTask: Task|undefined = Task.fromMemory(this.creep)
 
             let newTask: Task = this.handle(oldTask);
 
 
             if(newTask) {
                 if(_.get(newTask, "taskType") !== _.get(oldTask, "taskType")) {
-                    console.log(this.creep.name,"is starting task",newTask.taskType);
+                    // console.log(this.creep.name,"is starting task",newTask.taskType);
                 }
                 
                 let result = newTask.run(this.creep);
@@ -76,8 +76,16 @@ export abstract class BaseCreep {
         }
     }
 
+    getFlag(name: string): Flag {
+        return this.creep.pos.findClosestByRange<Flag>(FIND_FLAGS, {
+            filter: (f: Flag) => f.name === name
+        });
+    }
+
     getClosestSource(): Source {
-        return this.creep.pos.findClosestByPath<Source>(FIND_SOURCES_ACTIVE);
+        return this.creep.pos.findClosestByPath<Source>(FIND_SOURCES, {filter: (source: Source) => {
+            return source.energy > 10;
+        }});
     }
 
     getClosestSpawn(): Spawn {
@@ -88,7 +96,7 @@ export abstract class BaseCreep {
         return this.creep.pos.findClosestByPath<Tower>(FIND_MY_STRUCTURES, {filter: {structureType: STRUCTURE_TOWER}});
     }
 
-    getClosestConstructionSite(): ConstructionSite {
+    getClosestConstructionSite(): ConstructionSite|undefined {
         let priority = [
             {structureType: STRUCTURE_CONTAINER},
             {structureType: STRUCTURE_ROAD},
@@ -96,10 +104,10 @@ export abstract class BaseCreep {
             {structureType: STRUCTURE_STORAGE},
         ];
 
-        let target = null;
+        let target: ConstructionSite|undefined;
         _.forEach(priority, (options) => {
             if (!target) {
-                target = this.creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES, {
+                target = this.creep.pos.findClosestByRange<ConstructionSite>(FIND_CONSTRUCTION_SITES, {
                     filter: (x: ConstructionSite) => {
                         return x.structureType === options.structureType;
                     }
@@ -108,7 +116,7 @@ export abstract class BaseCreep {
         });
 
         if (!target) { 
-            target = this.creep.pos.findClosestByRange(FIND_CONSTRUCTION_SITES);
+            target = this.creep.pos.findClosestByRange<ConstructionSite>(FIND_CONSTRUCTION_SITES);
         }
 
         return target;
@@ -116,17 +124,17 @@ export abstract class BaseCreep {
 
     getClosestDamagedStructure(): Structure {
         return this.creep.pos.findClosestByPath<Structure>(FIND_MY_CONSTRUCTION_SITES, {
-            filter: (structure: StructureSpawn) => structure.hits < structure.hitsMax;
+            filter: (structure: StructureSpawn) => structure.hits < structure.hitsMax,
         });
     }
 
-    getClosestFillable(): StructureExtension|StructureSpawn {
+    getClosestFillable(): StructureExtension|StructureSpawn|undefined {
         let priority = [
             {structureType: STRUCTURE_SPAWN},
             {structureType: STRUCTURE_EXTENSION},
         ];
 
-        let target = null;
+        let target: StructureExtension|StructureSpawn|undefined;
         _.forEach(priority, (options) => {
             if (!target) {
                 target = this.creep.pos.findClosestByRange<StructureExtension|StructureSpawn>(FIND_STRUCTURES, {
@@ -152,13 +160,23 @@ export abstract class BaseCreep {
         })
     }
 
+    getClosestAvailableStockpile(): StructureContainer|StructureStorage {
+        return this.creep.pos.findClosestByRange<StructureContainer|StructureStorage>(FIND_STRUCTURES, {
+            filter: (structure:StructureContainer|StructureStorage) => ((structure.structureType === STRUCTURE_CONTAINER || structure.structureType === STRUCTURE_STORAGE) && _.sum(structure.store) < structure.storeCapacity),
+        })
+    }
+
+    getClosestDroppedResource() {
+        return _.first(this.creep.pos.findInRange<Resource>(FIND_DROPPED_RESOURCES, 10));
+    }
+
     getSmallestStockpile(resource = RESOURCE_ENERGY): StructureContainer|StructureStorage {
         return _.min(this.getStockpiles(), (c: StructureContainer|StructureStorage) => c.store[resource]);
     }
 
-    getLargestStockpile(resource = RESOURCE_ENERGY): StructureContainer|StructureStorage {
+    getLargestStockpile(resource = RESOURCE_ENERGY): StructureContainer|StructureStorage|undefined {
         let x = _.max(this.getStockpiles(), (c: StructureContainer|StructureStorage) => c.store[resource]);
-        return x.store[resource] > 0 ? x : null;
+        return x.store[resource] > 0 ? x : undefined;
     }
 
     getSpawnStockpile(spawn: Spawn): StructureContainer|StructureStorage {
@@ -171,21 +189,17 @@ export abstract class BaseCreep {
         })
     }
 
-    protected getRoom(targetPlan: number): string {
-        for (const name in Plans.rooms) {
-            let x = Plans.rooms[name];
-            if (x === targetPlan) {
-                return name;
-            }
-        }
-        return null;
+    getBodyTotalCost() {
+        return BaseCreep.calcTotalBodyCost(this.creep.body);
     }
+
+
 
     /*================================
     =            ABSTRACT            =
     ================================*/
 
-    protected abstract handle(task: Task): Task;
+    protected abstract handle(task: Task|undefined): Task;
     protected abstract draw(): void;
 
 
@@ -193,20 +207,44 @@ export abstract class BaseCreep {
     =            STATIC            =
     ==============================*/
 
-    static getSpawn(room: Room) {
-        const spawns: Spawn[] = room.find<Spawn>(FIND_MY_SPAWNS, {
-            filter: (spawn: Spawn) => !spawn.spawning
-        });
-
-        if (spawns[0]) {
-            return spawns[0];
-        }
-
-        return null;
+    static calcTotalBodyCost(body: {type: string}[]) {
+        return _.reduce(body, (sum, part) => {
+            switch (part.type) {
+                case MOVE:
+                    return sum + 50;
+                case WORK:
+                    return sum + 100;
+                case CARRY:
+                    return sum + 50;
+                case ATTACK:
+                    return sum + 80;
+                case RANGED_ATTACK:
+                    return sum + 150;
+                case HEAL:
+                    return sum + 250;
+                case CLAIM:
+                    return sum + 600;
+                case TOUGH:
+                    return sum + 10;
+            }
+            return sum;
+        }, 0);
     }
 
-    static getMemory(room: Room): {[key: string]: any} {
-        return {room: room.name};
+    // static getSpawn(room: Room) {
+    //     const spawns: Spawn[] = room.find<Spawn>(FIND_MY_SPAWNS, {
+    //         filter: (spawn: Spawn) => !spawn.spawning
+    //     });
+
+    //     if (spawns[0]) {
+    //         return spawns[0];
+    //     }
+
+    //     return null;
+    // }
+
+    static getMemory(nest: Nest): {[key: string]: any} {
+        return {nest: nest.name};
     }
 
     static getName(): string {

@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-31 19:59:26
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-31 20:26:48
+* @Last Modified time: 2017-08-01 14:01:52
 */
 
 'use strict';
@@ -11,7 +11,7 @@ import {Nest, INest} from "./Nest";
 import * as Plans from "./../rooms/Plans";
 
 export class NestManager {
-	public nests: Nest[];
+	public nests: Nest[] = [];
 
 	constructor(memory: {[name: string]: INest}) {
 		// First run
@@ -24,9 +24,12 @@ export class NestManager {
 					x[room.name] = {
 						name: room.name,
 						rooms: [{
-							room: room.name,
-							industry: Plans.BASE,
-							military: Plans.BASE,
+							name: room.name,
+							updated_at: Game.time,
+							plans: {
+								industry: Plans.BASE,
+								military: Plans.BASE,
+							}
 						}],
 					}
 

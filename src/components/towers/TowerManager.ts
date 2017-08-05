@@ -11,7 +11,7 @@ export class TowerManager {
         })
 
         _.forEach(this.towers, function(tower){
-            let closestEnemy = tower.pos.findClosestByRange<Creep>(FIND_CREEPS, {
+            let closestEnemy = tower.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
                 filter: function (creep: Creep) {
                     return _.indexOf(Config.FRIENDS, creep.owner.username) < 0;
                 }
@@ -33,11 +33,11 @@ export class TowerManager {
                     {structureType: STRUCTURE_WALL, percentage: 0.0003},
                 ];
 
-                let target = null;
+                let target: Structure|null = null;
                 _.forEach(priority, function (options) {
                     if (!target) {
-                        target = tower.pos.findClosestByRange(FIND_STRUCTURES, {
-                            filter: function (x) {
+                        target = tower.pos.findClosestByRange<Structure>(FIND_STRUCTURES, {
+                            filter: function (x: Structure) {
                                 return x.structureType === options.structureType && x.hits / x.hitsMax < options.percentage;
                             }
                         })

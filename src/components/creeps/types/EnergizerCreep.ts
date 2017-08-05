@@ -2,13 +2,14 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-01 09:16:16
+* @Last Modified time: 2017-08-04 14:43:57
 */
 
 'use strict';
 
 import {Task, WithdrawFromStockpileTask, HarvestTask, GotoTargetTask, FillWithEnergyTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
+import {Nest} from "./../../nest/Nest";
 
 export class EnergizerCreep extends BaseCreep {
     protected handle(task: Task): Task {
@@ -20,20 +21,19 @@ export class EnergizerCreep extends BaseCreep {
 
         if(!task) {
             if(!creep.memory.working) {
-
                 if (containers.length === 0) {
                     task = new HarvestTask(this.getClosestSource());
                 } else if (stockpileSpawn) {
                     task = new WithdrawFromStockpileTask(stockpileSpawn, RESOURCE_ENERGY);
                 } else {
-                    task = new GotoTargetTask(stockpileSpawn);
+                    // task = new GotoTargetTask(stockpileSpawn);
                 }
             } else {
                 let fillable = this.getClosestFillable();
 
                 if(creep.room.energyAvailable >= 300) {
                     let tower = this.getClosestTower();
-                    if((tower.energy < 300 && creep.carryCapacity > 150) || tower.energy < 25) {
+                    if(tower && ((tower.energy < 300 && creep.carryCapacity > 150) || tower.energy < 25)) {
                         fillable = tower;
                     }
                 }
@@ -41,8 +41,8 @@ export class EnergizerCreep extends BaseCreep {
                 if(fillable) {
                     task = new FillWithEnergyTask(fillable);
                 } else {
-                    task = new GotoTargetTask(stockpileSpawn);
-                    this.setSleep(25);
+                    // task = new GotoTargetTask(stockpileSpawn);
+                    this.setSleep(5);
                 }
             }
         }
@@ -56,16 +56,15 @@ export class EnergizerCreep extends BaseCreep {
 
     static type: string = "energizer";
 
-    static createCreep(room: Room, level: number): string|number|null {
-        const spawn = EnergizerCreep.getSpawn(room);
-        const body = EnergizerCreep.getBody(room, level);
+    static createCreep(spawn: Spawn, nest: Nest, level: number = 1): string|number|null {
+        const body = EnergizerCreep.getBody(level);
         const name = EnergizerCreep.getName();
-        const memory = EnergizerCreep.getMemory(room);
+        const memory = EnergizerCreep.getMemory(nest);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(room: Room): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(room), {
+    static getMemory(nest: Nest): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(nest), {
             type: EnergizerCreep.type,
         });
     }
@@ -86,7 +85,7 @@ export class EnergizerCreep extends BaseCreep {
      * @param  {Room}     room [description]
      * @return {string[]}      [description]
      */
-    static getBody(room: Room, level: number): string[] {
+    static getBody(level: number): string[] {
         switch (level) {
             case 1: // 300
                 return [WORK, CARRY, CARRY, CARRY, MOVE];

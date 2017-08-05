@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-27 16:58:47
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-31 10:18:38
+* @Last Modified time: 2017-08-04 17:25:56
 */
 
 'use strict';
@@ -11,7 +11,7 @@ import * as Config from "./../../../config/config";
 
 export interface ITaskMemory {
 	taskType: string;
-	targetRoom?: string;
+	targetRoom?: string | null;
 	targetId?: string;
 	targetPos?: {
 		x: number;
@@ -22,7 +22,7 @@ export interface ITaskMemory {
 }
 
 export abstract class Task {
-	constructor(protected target: any) {}
+	constructor(protected target: undefined | null | any) {}
 
 	public abstract run(creep: Creep): number;
 
@@ -33,13 +33,21 @@ export abstract class Task {
 	public taskType: string = "task";
 	protected resource: string;
 
-	static fromMemory(creep: Creep) {
-		let m: ITaskMemory = _.get(creep, "memory.task", null);
+	static fromMemory(creep: Creep): Task|undefined {
+		let m: ITaskMemory|undefined = _.get<ITaskMemory>(creep, "memory.task", undefined);
 		
-		if (m) {
+		if (_.isObject(m)) {
 			switch (m.taskType) {
 				case "harvest":
 					return new HarvestTask(Game.getObjectById<Source|Mineral>(m.targetId));
+				case "reserve":
+					return new ReserveTask(Game.getObjectById<Controller>(m.targetId));
+				case "goto_target":
+					return new GotoTargetTask(Game.getObjectById<Creep|Structure|Flag>(m.targetId));
+				case "attack":
+					return new AttackTask(Game.getObjectById<Creep|Structure>(m.targetId));
+				case "ranged_attack":
+					return new RangedAttackTask(Game.getObjectById<Creep|Structure>(m.targetId));
 				case "renew":
 					return new RenewTask(Game.getObjectById<Spawn>(m.targetId));
 				case "repair":
@@ -58,11 +66,11 @@ export abstract class Task {
 					return new GotoRoomTask(m.targetRoom);
 				default:
 					console.log("Unknown task type:", m.taskType);
-					return null;
+					return;
 			}
 		}
 
-		return null;
+		return;
 	}
 
 	public toMemory(): ITaskMemory {
@@ -76,7 +84,7 @@ export abstract class Task {
 
 export class BuildTask extends Task {
 	public taskType: string = "build";
-	constructor(protected target: ConstructionSite) {
+	constructor(protected target: undefined | null | ConstructionSite) {
 		super(target);
 	}
 
@@ -106,7 +114,7 @@ export class BuildTask extends Task {
 
 export class RepairTask extends Task {
 	public taskType: string = "repair";
-	constructor(protected target: Structure) {
+	constructor(protected target: undefined | null | Structure) {
 		super(target);
 	}
 
@@ -136,7 +144,7 @@ export class RepairTask extends Task {
 
 export class HarvestTask extends Task {
 	public taskType: string = "harvest";
-	constructor(protected target: Source | Mineral) {
+	constructor(protected target: undefined | null | Source | Mineral | Resource) {
 		super(target);
 	}
 
@@ -147,11 +155,20 @@ export class HarvestTask extends Task {
 			return Task.FAILED;
 		}
 
+		if (target instanceof Source && target.energy <= 10) {
+			return Task.DONE;
+		}
+
 		if (_.sum(creep.carry) === creep.carryCapacity) {
 			return Task.DONE;
 		}
 
-		let harvestResult = creep.harvest(target);
+		let harvestResult: number;
+		if(target instanceof Resource) {
+			harvestResult = creep.pickup(target)
+		} else {
+			harvestResult = creep.harvest(target);
+		}
         if (harvestResult === ERR_NOT_IN_RANGE) {
         	let moveResult = creep.moveTo(target.pos, {reusePath: 10});
             if (moveResult === ERR_NO_PATH) {
@@ -164,9 +181,39 @@ export class HarvestTask extends Task {
 	}
 }
 
+export class ReserveTask extends Task {
+	public taskType: string = "reserve";
+	constructor(protected target: undefined | null | Controller) {
+		super(target);
+	}
+
+	run(creep: Creep): number {
+		let target = this.target;
+
+		if (!target) {
+			return Task.FAILED;
+		}
+
+		if (target.my || (target.reservation && target.reservation.ticksToEnd >= 5000)) {
+			return Task.DONE;
+		}
+
+		let reserveResult: number;
+		reserveResult = creep.reserveController(target);
+        if (reserveResult === ERR_NOT_IN_RANGE) {
+        	let moveResult = creep.moveTo(target.pos, {reusePath: 10});
+            if (moveResult === ERR_NO_PATH) {
+                return Task.FAILED;
+            }
+        }
+
+        return Task.IN_PROGRESS;
+	}
+}
+
 export class GotoTargetTask extends Task {
-	public taskType: string = "harvest";
-	constructor(protected target: Structure | Creep) {
+	public taskType: string = "goto_target";
+	constructor(protected target: undefined | null | Structure | Creep | Flag) {
 		super(target);
 	}
 
@@ -187,8 +234,8 @@ export class GotoTargetTask extends Task {
 }
 
 export class AttackTask extends Task {
-	public taskType: string = "harvest";
-	constructor(protected target: Creep|Spawn|Structure) {
+	public taskType: string = "attack";
+	constructor(protected target: undefined | null | Creep|Spawn|Structure) {
 		super(target);
 	}
 
@@ -216,13 +263,47 @@ export class AttackTask extends Task {
 	}
 }
 
-export class GotoRoomTask extends Task {
-	public taskType: string = "goto_room_position";
-	constructor(protected target: string) {
+export class RangedAttackTask extends Task {
+	public taskType: string = "ranged_attack";
+	constructor(protected target: undefined | null | Creep|Spawn|Structure) {
 		super(target);
 	}
 
 	run(creep: Creep): number {
+		let target = this.target;
+
+		if (!target) {
+			return Task.FAILED;
+		}
+
+		let result = creep.rangedAttack(target);
+
+		switch (result) {
+			case OK:
+				return Task.IN_PROGRESS;
+			case ERR_NOT_IN_RANGE:
+				let moveResult = creep.moveTo(target.pos);
+	            if (moveResult === ERR_NO_PATH) {
+	                return Task.FAILED;
+	            }
+				return Task.IN_PROGRESS;
+			default:
+				return Task.IN_PROGRESS;
+		}
+	}
+}
+
+export class GotoRoomTask extends Task {
+	public taskType: string = "goto_room_position";
+	constructor(protected target: undefined | null | string) {
+		super(target);
+	}
+
+	run(creep: Creep): number {
+		if (!this.target) {
+			return Task.FAILED;
+		}
+
 		let pos = new RoomPosition(24,24,this.target);
 
 		if (!pos) {
@@ -244,10 +325,9 @@ export class GotoRoomTask extends Task {
 			x = creep.move(creep.pos.getDirectionTo(pos));
 		}
     	switch (x) {
-    		case OK:
-    			break;
     		case ERR_NO_PATH:
     			return Task.FAILED;
+    		case OK:
     		default:
         		return Task.IN_PROGRESS;
     	}
@@ -265,7 +345,7 @@ export class GotoRoomTask extends Task {
 
 export class FillWithEnergyTask extends Task {
 	public taskType: string = "fill_with_energy";
-	constructor(protected target: StructureExtension|StructureSpawn|StructureTower) {
+	constructor(protected target: undefined | null | StructureExtension|StructureSpawn|StructureTower) {
 		super(target);
 	}
 
@@ -292,7 +372,7 @@ export class FillWithEnergyTask extends Task {
 
 export class WithdrawFromStockpileTask extends Task {
 	public taskType: string = "withdraw_from_container";
-	constructor(protected target: StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY) {
+	constructor(protected target: undefined | null | StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY) {
 		super(target);
 	}
 
@@ -319,7 +399,7 @@ export class WithdrawFromStockpileTask extends Task {
 
 export class DepositIntoStockpileTask extends Task {
 	public taskType: string = "deposit_into_container";
-	constructor(protected target: StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY) {
+	constructor(protected target: undefined | null | StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY) {
 		super(target);
 	}
 
@@ -346,7 +426,7 @@ export class DepositIntoStockpileTask extends Task {
 
 export class RenewTask extends Task {
 	public taskType: string = "renew";
-	constructor(protected target: StructureSpawn) {
+	constructor(protected target: undefined | null | StructureSpawn) {
 		super(target);
 	}
 
@@ -378,7 +458,7 @@ export class RenewTask extends Task {
 
 export class UpgradeControllerTask extends Task {
 	public taskType: string = "upgrade_controller";
-	constructor(protected target: StructureController) {
+	constructor(protected target: null | StructureController) {
 		super(target);
 	}
 

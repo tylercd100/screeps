@@ -44,7 +44,7 @@ export class BaseLevelOneRoomLayout extends RoomLayout {
 		
 		if(!_.includes(room.memory.layouts, BaseLevelOneRoomLayout.key)) {
 			let spawns: StructureSpawn[] = room.find<StructureSpawn>(FIND_MY_SPAWNS)
-			let spawn: StructureSpawn = spawns.length > 0 ? spawns[0] : null;
+			let spawn: StructureSpawn|null = spawns.length > 0 ? spawns[0] : null;
 			let resources = room.find(FIND_SOURCES);
 
 			if (!spawn) {
@@ -52,11 +52,13 @@ export class BaseLevelOneRoomLayout extends RoomLayout {
 			}
 
 			_.forEach(resources, (r: Resource) => {
-				let path = spawn.pos.findPathTo(r.pos);
-				_.forEach(path, (pos: PathStep) => {
-					let p: RoomPosition = new RoomPosition(pos.x, pos.y, room.name);
-					room.createConstructionSite(p, STRUCTURE_ROAD);
-				});
+				if(spawn) {
+					let path = spawn.pos.findPathTo(r.pos);
+					_.forEach(path, (pos: PathStep) => {
+						let p: RoomPosition = new RoomPosition(pos.x, pos.y, room.name);
+						room.createConstructionSite(p, STRUCTURE_ROAD);
+					});
+				}
 			});
 
 			room.memory.layouts.push(BaseLevelOneRoomLayout.key)

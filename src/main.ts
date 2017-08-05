@@ -1,8 +1,5 @@
 import * as Config from "./config/config";
 import {NestManager} from "./components/nest/NestManager";
-import {Nest} from "./components/nest/Nest";
-import {RoomManager} from "./components/rooms/RoomManager";
-import {TowerManager} from "./components/towers/TowerManager";
 
 import * as Profiler from "screeps-profiler";
 import { log } from "./lib/logger/log";
@@ -32,13 +29,13 @@ function mloop() {
 
   // Clears any non-existing creep memory.
   for (const name in Memory.creeps) {
-    if (Game.creeps[name] && !Game.creeps[name].memory.room) {
-      Game.creeps[name].memory.room = "W77N32";
-    }
-
     if (!Game.creeps[name]) {
       log.info("Clearing non-existing creep memory:", name);
       delete Memory.creeps[name];
+    }
+
+    if (Game.creeps[name] && !Game.creeps[name].memory.nest) {
+      Game.creeps[name].memory.nest = "W77N32";
     }
   }
 

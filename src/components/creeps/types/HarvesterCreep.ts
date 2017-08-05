@@ -2,14 +2,14 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-31 10:18:39
+* @Last Modified time: 2017-08-01 19:22:35
 */
 
 'use strict';
 
 import {Task, BuildTask, HarvestTask, GotoRoomTask, DepositIntoStockpileTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
-import * as Plans from "./../../rooms/Plans";
+import {Nest} from "./../../nest/Nest";
 
 export class HarvesterCreep extends BaseCreep {
     protected handle(task: Task): Task {
@@ -19,33 +19,29 @@ export class HarvesterCreep extends BaseCreep {
         if(!task) {
             
             if(!creep.memory.working) {
-                let roomName;
-                
-                if(!roomName) {
-                    roomName = this.getRoom(Plans.HARVEST_SOURCES);
-                }
+                let target = creep.memory.station;
 
-                if(roomName) {
-                    if (creep.room.name === roomName) {
-                        task = new HarvestTask(this.getClosestSource());
+                if(target) {
+                    if (creep.room.name === target) {
+                        let resource = this.getClosestDroppedResource();
+                        if (resource) {
+                            task = new HarvestTask(resource);
+                        } else {
+                            task = new HarvestTask(this.getClosestSource());
+                        }
                     } else {
-                        task = new GotoRoomTask(roomName);
+                        task = new GotoRoomTask(target);
                     }
                 }
-                // task = new WithdrawFromStockpileTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
             } else {
 
-                let roomName;
-                
-                if(!roomName) {
-                    roomName = this.getRoom(Plans.BASE);
-                }
+                let target = creep.memory.nest;
 
-                if(roomName) {
-                    if (creep.room.name === roomName) {
-                        task = new DepositIntoStockpileTask(this.getClosestStockpile());
+                if(target) {
+                    if (creep.room.name === target) {
+                        task = new DepositIntoStockpileTask(this.getClosestAvailableStockpile());
                     } else {
-                        task = new GotoRoomTask(roomName);
+                        task = new GotoRoomTask(target);
                     }
                 }
             }
@@ -71,16 +67,15 @@ export class HarvesterCreep extends BaseCreep {
 
     static type: string = "harvester";
 
-    static createCreep(room: Room, level: number = 1): string|number|null {
-        const spawn = HarvesterCreep.getSpawn(room);
-        const body = HarvesterCreep.getBody(room, level);
+    static createCreep(spawn: Spawn, nest: Nest, level: number = 1): string|number|null {
+        const body = HarvesterCreep.getBody(level);
         const name = HarvesterCreep.getName();
-        const memory = HarvesterCreep.getMemory(room);
+        const memory = HarvesterCreep.getMemory(nest);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(room: Room): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(room), {
+    static getMemory(nest: Nest): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(nest), {
             type: HarvesterCreep.type,
         });
     }
@@ -89,7 +84,7 @@ export class HarvesterCreep extends BaseCreep {
         return HarvesterCreep.type+"-"+BaseCreep.getName();
     }
 
-    static getBody(room: Room, level: number = 1): string[] {
+    static getBody(level: number = 1): string[] {
         switch (level) {
             case 1: // 300
             case 2: // 550
