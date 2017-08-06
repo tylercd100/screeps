@@ -2,13 +2,13 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:51:45
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-04 11:53:34
+* @Last Modified time: 2017-08-06 11:40:47
 */
 
 'use strict';
 
 import * as Config from "./../../../config/config";
-import {Task} from "./../tasks/Tasks";
+import {Task, GotoTargetTask} from "./../tasks/Tasks";
 import {Nest} from "./../../nest/Nest";
 
 export abstract class BaseCreep {
@@ -56,6 +56,28 @@ export abstract class BaseCreep {
 
     isAsleep(): boolean {
         return this.creep.memory.sleep > 0;
+    }
+
+    gotoRally(): Task {
+        let task: Task;
+        let creep = this.creep;
+        let target = this.getFlag("Rally");
+        if(!target) {
+            target = new RoomPosition(24, 24, creep.memory.station);
+        }
+        if(!target) {
+            target = this.getClosestSpawn();
+        }
+
+        if(target) {
+            if(target.pos.getRangeTo(creep.pos) > 2) {
+                task = new GotoTargetTask(target)
+            }
+        } else {
+            creep.move(creep.pos.getDirectionTo(24, 24));
+        }
+
+        return task;
     }
 
     setWorkingToggle(): void {
@@ -163,6 +185,12 @@ export abstract class BaseCreep {
     getClosestAvailableStockpile(): StructureContainer|StructureStorage {
         return this.creep.pos.findClosestByRange<StructureContainer|StructureStorage>(FIND_STRUCTURES, {
             filter: (structure:StructureContainer|StructureStorage) => ((structure.structureType === STRUCTURE_CONTAINER || structure.structureType === STRUCTURE_STORAGE) && _.sum(structure.store) < structure.storeCapacity),
+        })
+    }
+
+    getClosestAvailableLink(): StructureLink {
+        return this.creep.pos.findClosestByRange<StructureLink>(FIND_STRUCTURES, {
+            filter: (structure:StructureLink) => (structure.structureType === STRUCTURE_LINK && structure.energy < structure.energyCapacity),
         })
     }
 

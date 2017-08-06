@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-01 19:22:35
+* @Last Modified time: 2017-08-05 22:54:22
 */
 
 'use strict';
@@ -39,7 +39,9 @@ export class HarvesterCreep extends BaseCreep {
 
                 if(target) {
                     if (creep.room.name === target) {
-                        task = new DepositIntoStockpileTask(this.getClosestAvailableStockpile());
+                        let stockpile = this.getClosestAvailableStockpile();
+                        let link = this.getClosestAvailableLink();
+                        task = new DepositIntoStockpileTask(link ? link : stockpile);
                     } else {
                         task = new GotoRoomTask(target);
                     }

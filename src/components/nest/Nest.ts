@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-31 19:58:29
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-05 00:51:55
+* @Last Modified time: 2017-08-05 23:29:13
 */
 
 'use strict';
@@ -17,6 +17,7 @@ import {HaulerCreep} from "./../creeps/types/HaulerCreep";
 import {EnergizerCreep} from "./../creeps/types/EnergizerCreep";
 import {HarvesterCreep} from "./../creeps/types/HarvesterCreep";
 import {TowerManager} from "./../towers/TowerManager";
+import {LinkManager} from "./../links/LinkManager";
 import * as Config from "./../../config/config";
 import * as Plans from "./../rooms/Plans";
 
@@ -104,6 +105,7 @@ export class Nest implements INest {
 
 			if (a) {
 				(new TowerManager()).run(a);
+				(new LinkManager()).run(a);
 			}
 		});
 
@@ -135,10 +137,10 @@ export class Nest implements INest {
 			
 			if(cntScout < maxScout && (!_.get(room, "contains") || Game.time - room.contains.updated_at > 3000)) {
 				room.plans.military = Plans.SCOUT;
-			} else if (!room.contains.safeMode && hasEnemyCreeps && (hasAllySpawn || hasMySpawn || hasMyCreeps || room.plans.industry === Plans.HARVEST_SOURCES)) {
+			} else if (!room.contains.safeMode && hasEnemyCreeps && !hasEnemySpawn && (hasAllySpawn || hasMySpawn || hasMyCreeps || room.plans.industry === Plans.HARVEST_SOURCES)) {
 					room.plans.military = Plans.DEFEND;
 			} else if (!room.contains.safeMode && (hasMyCreeps && hasSourcePoints && (hasEnemyController || hasMySpawn) && (hasEnemyCreeps || hasEnemySpawn))) {
-				room.plans.military = Plans.ATTACK;
+				room.plans.military = Plans.IGNORE; //Needs to be attack
 			} else if(!(room.plans.military === Plans.RESERVE && controller && !controller.my && _.get(controller, "reservation.ticksToEnd", 0) < 1500)) {
 				room.plans.military = Plans.IGNORE;
 			}

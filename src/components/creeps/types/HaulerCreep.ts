@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-04 12:14:46
+* @Last Modified time: 2017-08-05 23:33:45
 */
 
 'use strict';
@@ -20,7 +20,8 @@ export class HaulerCreep extends BaseCreep {
         if(!task) {
             let spawn = this.getClosestSpawn();
             let containerSpawn: StructureContainer|StructureStorage|null = null;
-            let containerController: StructureContainer|null = null
+            let containerController: StructureContainer|null = null;
+            let linkSpawn = spawn.pos.findClosestByRange<StructureLink>(FIND_STRUCTURES, {filter: (s) => s.structureType === STRUCTURE_LINK});
             if(spawn) {
                 containerSpawn = this.getSpawnStockpile(spawn)
             }
@@ -33,7 +34,11 @@ export class HaulerCreep extends BaseCreep {
                 if (resource) {
                     task = new HarvestTask(resource);
                 } else {
-                    task = new WithdrawFromStockpileTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
+                    if(linkSpawn && linkSpawn.energy > 0) {
+                        task = new WithdrawFromStockpileTask(linkSpawn);
+                    } else {
+                        task = new WithdrawFromStockpileTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
+                    }
                 }
             } else {
                 if(containerSpawn && _.sum(containerSpawn.store) < containerSpawn.storeCapacity && containerSpawn.store[RESOURCE_ENERGY] - room.energyCapacityAvailable < containerController.store[RESOURCE_ENERGY]) {

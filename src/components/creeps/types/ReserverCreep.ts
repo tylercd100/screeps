@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-04 14:51:23
+* @Last Modified time: 2017-08-06 11:41:47
 */
 
 'use strict';
@@ -26,7 +26,7 @@ export class ReserverCreep extends BaseCreep {
                     if(creep.room.controller) {
                         task = new ReserveTask(creep.room.controller)
                     } else {
-                        this.setSleep(25);
+                        task = this.gotoRally();
                     }
                 } else {
                     task = new GotoRoomTask(target);

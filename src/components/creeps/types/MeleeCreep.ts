@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-05 00:59:15
+* @Last Modified time: 2017-08-06 11:41:04
 */
 
 'use strict';
@@ -37,21 +37,7 @@ export class MeleeCreep extends BaseCreep {
                         task = new AttackTask(enemyCreep);
                     }
                 } else if(!task) {
-                    let target = this.getFlag("Rally");
-                    if(!target) {
-                        target = new RoomPosition(24, 24, creep.memory.station);
-                    }
-                    if(!target) {
-                        target = this.getClosestSpawn();
-                    }
-
-                    if(target) {
-                        if(target.pos.getRangeTo(creep.pos) > 2) {
-                            task = new GotoTargetTask(target)
-                        }
-                    } else {
-                        creep.move(creep.pos.getDirectionTo(24, 24));
-                    }
+                    task = this.gotoRally();
                 }
             } else if(!task) {
                 task = new GotoRoomTask(station);

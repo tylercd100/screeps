@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-04 14:43:57
+* @Last Modified time: 2017-08-05 23:34:36
 */
 
 'use strict';
@@ -18,11 +18,14 @@ export class EnergizerCreep extends BaseCreep {
         let spawn = this.getClosestSpawn();
         let containers = this.getStockpiles();
         let stockpileSpawn: StructureContainer|StructureStorage = this.getSpawnStockpile(spawn);
+        let linkSpawn = spawn.pos.findClosestByRange<StructureLink>(FIND_STRUCTURES, {filter: (s) => s.structureType === STRUCTURE_LINK});
 
         if(!task) {
             if(!creep.memory.working) {
                 if (containers.length === 0) {
                     task = new HarvestTask(this.getClosestSource());
+                } else if (linkSpawn && linkSpawn.energy > 0) {
+                    task = new WithdrawFromStockpileTask(linkSpawn, RESOURCE_ENERGY);
                 } else if (stockpileSpawn) {
                     task = new WithdrawFromStockpileTask(stockpileSpawn, RESOURCE_ENERGY);
                 } else {

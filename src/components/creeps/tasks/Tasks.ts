@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-27 16:58:47
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-04 17:25:56
+* @Last Modified time: 2017-08-06 11:43:31
 */
 
 'use strict';
@@ -376,22 +376,24 @@ export class FillWithEnergyTask extends Task {
 
 export class WithdrawFromStockpileTask extends Task {
 	public taskType: string = "withdraw_from_container";
-	constructor(protected target: undefined | null | StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY, protected forceGoto: boolean = false) {
+	constructor(protected target: undefined | null | StructureLink|StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY, protected forceGoto: boolean = false) {
 		super(target);
 	}
 
 	run(creep: Creep): number {
 		let target = this.target;
+		let empty = (target.store && target.store[this.resource] === 0) || (target.energy && target.energy === 0);
 
-		if (!target || !target.store) {
+		if (!target || (!target.store && !target.energy)) {
 			return Task.FAILED;
 		}
 
-		if (_.sum(creep.carry) === creep.carryCapacity || (target.store[this.resource] === 0 && !this.forceGoto)) {
+		if (_.sum(creep.carry) === creep.carryCapacity || (empty && !this.forceGoto)) {
 			return Task.DONE;
 		}
 
-        if (creep.withdraw(target, this.resource) === ERR_NOT_IN_RANGE) {
+		let result = creep.withdraw(target, this.resource);
+        if (result === ERR_NOT_IN_RANGE) {
             if (creep.moveTo(target.pos, {reusePath: 10}) === ERR_NO_PATH) {
                 return Task.FAILED;
             }
@@ -403,7 +405,7 @@ export class WithdrawFromStockpileTask extends Task {
 
 export class DepositIntoStockpileTask extends Task {
 	public taskType: string = "deposit_into_container";
-	constructor(protected target: undefined | null | StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY) {
+	constructor(protected target: undefined | null | StructureContainer|StructureStorage|StructureLink, protected resource: string = RESOURCE_ENERGY) {
 		super(target);
 	}
 
