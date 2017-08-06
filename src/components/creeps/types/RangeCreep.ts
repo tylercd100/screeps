@@ -22,23 +22,32 @@ export class RangeCreep extends BaseCreep {
         if(station) {
             if (creep.room.name === station) {
 
-                let enemyCreep = creep.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
+                let enemyCreepNonHeal = creep.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
                     filter: function (creep: Creep) {
-                        return _.indexOf(Config.FRIENDS, creep.owner.username) < 0;
+                        return _.indexOf(Config.FRIENDS, creep.owner.username) < 0 && !_.find(creep.body, {type:HEAL});
                     }
                 })
 
+                let enemyCreepHeal = creep.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
+                    filter: function (creep: Creep) {
+                        return _.indexOf(Config.FRIENDS, creep.owner.username) < 0 && _.find(creep.body, {type:HEAL});
+                    }
+                })
 
                 let enemySpawn = creep.pos.findClosestByRange<Spawn>(FIND_HOSTILE_SPAWNS);
 
-                if ((enemyCreep || enemySpawn) && _.get(creep, "room.controller.safeMode", 0) === 0) {
-                    console.log("lets start up the task",enemyCreep);
-                    if (enemyCreep) {
-                        task = new RangedAttackTask(enemySpawn);
+                if ((enemyCreepNonHeal || enemyCreepHeal || enemySpawn) && _.get(creep, "room.controller.safeMode", 0) === 0) {
+                    if (enemyCreepHeal) {
+                        task = new RangedAttackTask(enemyCreepHeal);
+                    } else if (enemyCreepNonHeal) {
+                        task = new RangedAttackTask(enemyCreepNonHeal);
                     } else if(enemySpawn) {
-                        task = new RangedAttackTask(enemyCreep);
+                        task = new RangedAttackTask(enemySpawn);
                     } else {
                         task = new GotoTargetTask(new RoomPosition(24, 24, creep.memory.station));
+                    }
+                    if(creep.pos.x === 0 || creep.pos.y ===0 || creep.pos.x === 49 || creep.pos.y ===49) {
+                        creep.move(creep.pos.getDirectionTo(24,24));
                     }
                 } else if(!task) {
                     let target = this.getFlag("Rally");
@@ -104,11 +113,11 @@ export class RangeCreep extends BaseCreep {
         switch (level) {
             case 1: // 300
             case 2: // 550
-                return [MOVE, RANGED_ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH];
+                return [TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK];
             case 3: // 800
             case 4:
             default:
-                return [MOVE, RANGED_ATTACK, RANGED_ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
+                return [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, RANGED_ATTACK, RANGED_ATTACK];
         }
     }
 }

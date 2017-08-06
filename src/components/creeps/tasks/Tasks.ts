@@ -19,6 +19,7 @@ export interface ITaskMemory {
 		roomName: string;
 	};
 	resource: string;
+	forceGoto: boolean;
 }
 
 export abstract class Task {
@@ -32,6 +33,7 @@ export abstract class Task {
 
 	public taskType: string = "task";
 	protected resource: string;
+	protected forceGoto: boolean;
 
 	static fromMemory(creep: Creep): Task|undefined {
 		let m: ITaskMemory|undefined = _.get<ITaskMemory>(creep, "memory.task", undefined);
@@ -57,7 +59,7 @@ export abstract class Task {
 				case "deposit_into_container":
 					return new DepositIntoStockpileTask(Game.getObjectById<StructureContainer|StructureStorage>(m.targetId), m.resource);
 				case "withdraw_from_container":
-					return new WithdrawFromStockpileTask(Game.getObjectById<StructureContainer|StructureStorage>(m.targetId), m.resource);
+					return new WithdrawFromStockpileTask(Game.getObjectById<StructureContainer|StructureStorage>(m.targetId), m.resource, m.forceGoto);
 				case "build":
 					return new BuildTask(Game.getObjectById<ConstructionSite>(m.targetId));
 				case "upgrade_controller":
@@ -78,6 +80,7 @@ export abstract class Task {
 			targetId: this.target.id,
 			taskType: this.taskType,
 			resource: this.resource,
+			forceGoto: this.forceGoto,
 		}
 	}
 }
@@ -339,6 +342,7 @@ export class GotoRoomTask extends Task {
 			targetRoom: this.target,
 			taskType: this.taskType,
 			resource: this.resource,
+			forceGoto: this.forceGoto,
 		}
 	}
 }
@@ -372,7 +376,7 @@ export class FillWithEnergyTask extends Task {
 
 export class WithdrawFromStockpileTask extends Task {
 	public taskType: string = "withdraw_from_container";
-	constructor(protected target: undefined | null | StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY) {
+	constructor(protected target: undefined | null | StructureContainer|StructureStorage, protected resource: string = RESOURCE_ENERGY, protected forceGoto: boolean = false) {
 		super(target);
 	}
 
@@ -383,7 +387,7 @@ export class WithdrawFromStockpileTask extends Task {
 			return Task.FAILED;
 		}
 
-		if (_.sum(creep.carry) === creep.carryCapacity || target.store[this.resource] === 0) {
+		if (_.sum(creep.carry) === creep.carryCapacity || (target.store[this.resource] === 0 && !this.forceGoto)) {
 			return Task.DONE;
 		}
 

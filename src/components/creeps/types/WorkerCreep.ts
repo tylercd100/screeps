@@ -13,41 +13,61 @@ import {Nest} from "./../../nest/Nest";
 
 export class WorkerCreep extends BaseCreep {
     protected handle(task: Task): Task {
-        let creep = this.creep;
-        let room = creep.room;
-        let controller = room.controller;
-        let container = this.getClosestStockpileWithResource(RESOURCE_ENERGY);
-        let creeps = room.find<Creep>(FIND_MY_CREEPS);
-        let energizers = _.filter(Game.creeps, (x) => {return x.memory.nest === creep.memory.nest && x.memory.type === "energizer"});
-        
         if(!task) {
+            let creep = this.creep;
+            let room = creep.room;
+            let controller = room.controller;
+            let container = this.getClosestStockpileWithResource(RESOURCE_ENERGY);
+            let creeps = room.find<Creep>(FIND_MY_CREEPS);
+            let energizers = _.filter(Game.creeps, (x) => {return x.memory.nest === creep.memory.nest && x.memory.type === "energizer"});
+            let site = this.getClosestConstructionSite();
+
+            let doFill = room.energyAvailable < room.energyCapacityAvailable && (energizers.length === 0 || creeps.length <= 8);
+            let doEmergencyUpgrade = (controller && (controller.ticksToDowngrade < 2000 || controller.level < 2));
+            let doBuildOrUpgrade = room.energyAvailable >= 300 || energizers.length > 0;
+            let doBuild = doBuildOrUpgrade && !!site;
+            let doUpgrade = doBuildOrUpgrade && !!controller;
+            
             if(!creep.memory.working) {
-                let resource = this.getClosestDroppedResource();
-                if (resource) {
-                    task = new HarvestTask(resource);
-                }else if (container) {
-                    task = new WithdrawFromStockpileTask(container, RESOURCE_ENERGY);
+                
+                let getFromAnySource = () => {
+                    let resource = this.getClosestDroppedResource();
+                    let task: Task;
+                    if (resource) {
+                        task = new HarvestTask(resource);
+                    } else if (container) {
+                        task = new WithdrawFromStockpileTask(container, RESOURCE_ENERGY);
+                    } else {
+                        task = new HarvestTask(this.getClosestSource());
+                    }
+                    return task;
+                }
+
+                let getFromControllerContainer = () => {
+                    let container = controller.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
+                    return new WithdrawFromStockpileTask(container, RESOURCE_ENERGY);
+                }
+
+                if (doFill) {
+                    task = getFromAnySource();
+                } else if (doEmergencyUpgrade) {
+                    task = getFromAnySource();
+                } else if (doBuild) {
+                    task = getFromAnySource();
+                } else if (doUpgrade) {
+                    task = getFromControllerContainer();
                 } else {
-                    task = new HarvestTask(this.getClosestSource());
+                    task = getFromAnySource();
                 }
             } else {
-                if (room.energyAvailable < room.energyCapacityAvailable && (energizers.length === 0 || creeps.length <= 8)) {
+                if (doFill) {
                     task = new FillWithEnergyTask(this.getClosestFillable());
-                } else if (controller && (controller.ticksToDowngrade < 2000 || controller.level < 2)) {
+                } else if (doEmergencyUpgrade) {
                     task = new UpgradeControllerTask(controller);
-                } else if (room.energyAvailable >= 300 || energizers.length > 0) {
-                    var site = this.getClosestConstructionSite();
-                    if(site) {
-                        task = new BuildTask(site);
-                    } else if (controller) {
-                        // var damaged = this.getClosestDamagedStructure();
-                        // if(damaged) {
-                        //     task = new RepairTask(damaged);
-                        // } else {
-
-                            task = new UpgradeControllerTask(controller);
-                        // }
-                    }
+                } else if (doBuild) {
+                    task = new BuildTask(site);
+                } else if (doUpgrade) {
+                    task = new UpgradeControllerTask(controller);
                 }
             }
         }

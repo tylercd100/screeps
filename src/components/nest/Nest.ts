@@ -755,23 +755,22 @@ export class Nest implements INest {
 				                break;
 				            case "miner":
 				                result = MinerCreep.createCreep(spawn, this, level);
-				                level = 0;
 				                break;
 				            case "hauler":
 				                result = HaulerCreep.createCreep(spawn, this, level);
-				                level = 0;
 				                break;
 				            case "energizer":
 				                result = EnergizerCreep.createCreep(spawn, this, level);
 				                break;
 				            case "harvester":
 				                result = HarvesterCreep.createCreep(spawn, this, level);
-				                level = 0;
 				                break;
 				        }
 
 				        if (_.isString(result)) {
 				            console.log("****** Spawning", type, "at level", level, "******");
+				        } else if(_.includes(["harvester", "hauler", "melee", "range", "miner"], type)) {
+				        	level = 0;
 				        } else {
 				            level--;
 				        }
