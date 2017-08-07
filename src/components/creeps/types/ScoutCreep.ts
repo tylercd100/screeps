@@ -21,6 +21,12 @@ export class ScoutCreep extends BaseCreep {
 
             if(station) {
                 if (creep.room.name === station) {
+
+                    if(!creep.memory.saidHello) {
+                        creep.say("Hello!");
+                        creep.memory.saidHello = true;
+                    }
+
                     let target: Flag|Spawn = this.getFlag("Rally");
                     if(!target) {
                         target = this.getClosestSpawn()
@@ -34,6 +40,7 @@ export class ScoutCreep extends BaseCreep {
                         creep.move(creep.pos.getDirectionTo(24, 24));
                     }
                 } else {
+                    creep.memory.saidHello = false;
                     task = new GotoRoomTask(station);
                 }
             }

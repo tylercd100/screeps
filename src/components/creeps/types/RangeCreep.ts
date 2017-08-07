@@ -7,7 +7,7 @@
 
 'use strict';
 
-import {Task, GotoRoomTask, RangedAttackTask, GotoTargetTask} from "./../tasks/Tasks";
+import {Task, GotoRoomTask, RangedAttackTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 import * as Config from "./../../../config/config";
 import {Nest} from "./../../nest/Nest";
@@ -21,7 +21,6 @@ export class RangeCreep extends BaseCreep {
 
         if(station) {
             if (creep.room.name === station) {
-
                 let enemyCreepNonHeal = creep.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
                     filter: function (creep: Creep) {
                         return _.indexOf(Config.FRIENDS, creep.owner.username) < 0 && !_.find(creep.body, {type:HEAL});
@@ -33,38 +32,31 @@ export class RangeCreep extends BaseCreep {
                         return _.indexOf(Config.FRIENDS, creep.owner.username) < 0 && _.find(creep.body, {type:HEAL});
                     }
                 })
-
+                let enemyTower = creep.pos.findClosestByRange<Creep>(FIND_STRUCTURES, {filter: (s) => s.structureType===STRUCTURE_TOWER})
                 let enemySpawn = creep.pos.findClosestByRange<Spawn>(FIND_HOSTILE_SPAWNS);
+                let enemyBarrier = _.first(creep.pos.findInRange<StructureRampart>(FIND_STRUCTURES, 10, {filter: (s) => s.structureType===STRUCTURE_RAMPART}));
+                
+                let target = null;
+                if(enemyBarrier && enemySpawn) {
+                    target = enemyBarrier;
+                } else if(enemyTower && enemySpawn) {
+                    target = enemyTower;
+                } else if (enemyCreepHeal) {
+                    target = enemyCreepHeal;
+                } else if (enemyCreepNonHeal) {
+                    target = enemyCreepNonHeal;
+                } else if(enemySpawn) {
+                    target = enemySpawn;
+                }
 
-                if ((enemyCreepNonHeal || enemyCreepHeal || enemySpawn) && _.get(creep, "room.controller.safeMode", 0) === 0) {
-                    if (enemyCreepHeal) {
-                        task = new RangedAttackTask(enemyCreepHeal);
-                    } else if (enemyCreepNonHeal) {
-                        task = new RangedAttackTask(enemyCreepNonHeal);
-                    } else if(enemySpawn) {
-                        task = new RangedAttackTask(enemySpawn);
-                    } else {
-                        task = new GotoTargetTask(new RoomPosition(24, 24, creep.memory.station));
-                    }
-                    if(creep.pos.x === 0 || creep.pos.y ===0 || creep.pos.x === 49 || creep.pos.y ===49) {
-                        creep.move(creep.pos.getDirectionTo(24,24));
-                    }
+                if (target && _.get(creep, "room.controller.safeMode", 0) === 0) {
+                    task = new RangedAttackTask(target);
                 } else if(!task) {
-                    let target = this.getFlag("Rally");
-                    if(!target) {
-                        target = new RoomPosition(24, 24, creep.memory.station);
-                    }
-                    if(!target) {
-                        target = this.getClosestSpawn();
-                    }
+                    task = this.gotoRally();
+                }
 
-                    if(target) {
-                        if(target.pos.getRangeTo(creep.pos) > 2) {
-                            task = new GotoTargetTask(target)
-                        }
-                    } else {
-                        creep.move(creep.pos.getDirectionTo(24, 24));
-                    }
+                if(creep.pos.x === 0 || creep.pos.y ===0 || creep.pos.x === 49 || creep.pos.y ===49) {
+                    creep.move(creep.pos.getDirectionTo(24,24));
                 }
             } else if(!task) {
                 task = new GotoRoomTask(station);

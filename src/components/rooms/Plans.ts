@@ -5,3 +5,5 @@ export const DEFEND = 3;
 export const HARVEST_SOURCES = 4;
 export const SCOUT = 5;
 export const RESERVE = 6;
+export const CLAIM = 7;
+export const PREPARE = 8;

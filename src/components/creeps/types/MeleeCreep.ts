@@ -7,7 +7,7 @@
 
 'use strict';
 
-import {Task, GotoRoomTask, AttackTask, GotoTargetTask} from "./../tasks/Tasks";
+import {Task, GotoRoomTask, AttackTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
 import * as Config from "./../../../config/config";
 import {Nest} from "./../../nest/Nest";
@@ -22,22 +22,42 @@ export class MeleeCreep extends BaseCreep {
         if(station) {
             if (creep.room.name === station) {
 
-                let enemyCreep = creep.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
+                let enemyCreepNonHeal = creep.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
                     filter: function (creep: Creep) {
-                        return _.indexOf(Config.FRIENDS, creep.owner.username) < 0;
+                        return _.indexOf(Config.FRIENDS, creep.owner.username) < 0 && !_.find(creep.body, {type:HEAL});
                     }
                 })
 
-                let enemySpawn = creep.pos.findClosestByRange<Spawn>(FIND_HOSTILE_SPAWNS);
-
-                if ((enemyCreep || enemySpawn) && _.get(creep, "room.controller.safeMode", 0) === 0) {
-                    if(enemySpawn) {
-                        task = new AttackTask(enemySpawn);
-                    } else if (enemyCreep) {
-                        task = new AttackTask(enemyCreep);
+                let enemyCreepHeal = creep.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
+                    filter: function (creep: Creep) {
+                        return _.indexOf(Config.FRIENDS, creep.owner.username) < 0 && _.find(creep.body, {type:HEAL});
                     }
+                })
+                let enemyTower = creep.pos.findClosestByRange<Creep>(FIND_STRUCTURES, {filter: (s) => s.structureType===STRUCTURE_TOWER})
+                let enemySpawn = creep.pos.findClosestByRange<Spawn>(FIND_HOSTILE_SPAWNS);
+                let enemyBarrier = _.first(creep.pos.findInRange<StructureRampart>(FIND_STRUCTURES, 10, {filter: (s) => s.structureType===STRUCTURE_RAMPART}));
+
+                let target = null;
+                if(enemyBarrier && enemySpawn) {
+                    target = enemyBarrier;
+                } else if(enemyTower && enemySpawn) {
+                    target = enemyTower;
+                } else if (enemyCreepHeal) {
+                    target = enemyCreepHeal;
+                } else if (enemyCreepNonHeal) {
+                    target = enemyCreepNonHeal;
+                } else if(enemySpawn) {
+                    target = enemySpawn;
+                }
+
+                if (target && _.get(creep, "room.controller.safeMode", 0) === 0) {
+                    task = new AttackTask(target);
                 } else if(!task) {
                     task = this.gotoRally();
+                }
+
+                if(creep.pos.x === 0 || creep.pos.y ===0 || creep.pos.x === 49 || creep.pos.y ===49) {
+                    creep.move(creep.pos.getDirectionTo(24,24));
                 }
             } else if(!task) {
                 task = new GotoRoomTask(station);
@@ -85,12 +105,12 @@ export class MeleeCreep extends BaseCreep {
     static getBody(level: number): string[] {
         switch (level) {
             case 1: // 300
-                return [ATTACK, ATTACK, MOVE, MOVE, TOUGH, TOUGH, TOUGH, TOUGH];
+                return [TOUGH, TOUGH, TOUGH, TOUGH, ATTACK, ATTACK, MOVE, MOVE];
             case 2: // 550
             case 3: // 800
             case 4:
             default:
-                return [ATTACK, ATTACK, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, TOUGH, TOUGH, TOUGH];
+                return [TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, TOUGH, ATTACK, ATTACK, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
         }
     }
 }

@@ -323,7 +323,7 @@ export class GotoRoomTask extends Task {
 		}
 
 
-		let x = creep.moveTo(pos, {reusePath: 10});
+		let x = creep.moveTo(pos, {reusePath: 10, maxRooms: 16});
 		if(x === ERR_NO_PATH) {
 			x = creep.move(creep.pos.getDirectionTo(pos));
 		}
