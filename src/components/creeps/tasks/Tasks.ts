@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-27 16:58:47
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-06 11:43:31
+* @Last Modified time: 2017-08-06 20:05:12
 */
 
 'use strict';
@@ -166,18 +166,26 @@ export class HarvestTask extends Task {
 			return Task.DONE;
 		}
 
-		let harvestResult: number;
+		let harvestResult;
 		if(target instanceof Resource) {
 			harvestResult = creep.pickup(target)
 		} else {
 			harvestResult = creep.harvest(target);
 		}
-        if (harvestResult === ERR_NOT_IN_RANGE) {
-        	let moveResult = creep.moveTo(target.pos, {reusePath: 10});
-            if (moveResult === ERR_NO_PATH) {
-                return Task.FAILED;
-            }
-        } else {
+		switch (harvestResult) {
+        	case ERR_NOT_IN_RANGE:
+	        	let moveResult = creep.moveTo(target.pos, {reusePath: 10});
+	            if (moveResult === ERR_NO_PATH) {
+	                return Task.FAILED;
+	            }
+	            break;
+	        case ERR_INVALID_TARGET:
+	        case ERR_NOT_OWNER:
+	        case ERR_BUSY:
+	        case ERR_NOT_FOUND:
+	        case ERR_NOT_ENOUGH_RESOURCES:
+	        case ERR_NO_BODYPART:
+	        	return Task.FAILED;
         }
 
         return Task.IN_PROGRESS;

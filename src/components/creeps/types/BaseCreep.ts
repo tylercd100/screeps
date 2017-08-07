@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:51:45
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-06 11:40:47
+* @Last Modified time: 2017-08-06 20:07:20
 */
 
 'use strict';
@@ -209,6 +209,14 @@ export abstract class BaseCreep {
 
     getSpawnStockpile(spawn: Spawn): StructureContainer|StructureStorage {
         return spawn.pos.findClosestByRange<StructureContainer|StructureStorage>(FIND_STRUCTURES, {filter: (s: StructureContainer|StructureStorage) => s.structureType===STRUCTURE_CONTAINER || s.structureType===STRUCTURE_STORAGE});
+    }
+
+    getSpawnStorage(spawn: Spawn): StructureStorage {
+        return spawn.pos.findClosestByRange<StructureStorage>(FIND_STRUCTURES, {filter: (s: StructureStorage) => {return s.structureType===STRUCTURE_STORAGE}});
+    }
+
+    getSpawnContainer(spawn: Spawn): StructureContainer {
+        return spawn.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => {return s.structureType===STRUCTURE_CONTAINER}});
     }
 
     getStockpiles(): (StructureContainer|StructureStorage)[] {

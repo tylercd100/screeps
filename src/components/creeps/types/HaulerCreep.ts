@@ -2,7 +2,11 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
+<<<<<<< HEAD
+* @Last Modified time: 2017-08-06 20:16:03
+=======
 * @Last Modified time: 2017-08-05 23:33:45
+>>>>>>> d75c12d00daca4c3859b529846d088071176631a
 */
 
 'use strict';
@@ -19,16 +23,19 @@ export class HaulerCreep extends BaseCreep {
         
         if(!task) {
             let spawn = this.getClosestSpawn();
+            let storageSpawn: StructureContainer|StructureStorage = null;
             let containerSpawn: StructureContainer|StructureStorage|null = null;
             let containerController: StructureContainer|null = null;
             let linkSpawn = spawn.pos.findClosestByRange<StructureLink>(FIND_STRUCTURES, {filter: (s) => s.structureType === STRUCTURE_LINK});
             if(spawn) {
-                containerSpawn = this.getSpawnStockpile(spawn)
+                containerSpawn = this.getSpawnContainer(spawn)
+                storageSpawn = this.getSpawnStorage(spawn)
             }
             if(controller) {
                 containerController = controller.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
             }
             let containerResources: StructureContainer[] = room.find<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER && s.id !== _.get(containerSpawn, "id") && s.id !== _.get(containerController, "id")});
+            
             if(!creep.memory.working) {
                 let resource = this.getClosestDroppedResource();
                 if (resource) {
@@ -41,13 +48,34 @@ export class HaulerCreep extends BaseCreep {
                     }
                 }
             } else {
-                if(containerSpawn && _.sum(containerSpawn.store) < containerSpawn.storeCapacity && containerSpawn.store[RESOURCE_ENERGY] - room.energyCapacityAvailable < containerController.store[RESOURCE_ENERGY]) {
-                    task = new DepositIntoStockpileTask(containerSpawn);
-                } else if (containerController && _.sum(containerController.store) < containerController.storeCapacity) {
-                    task = new DepositIntoStockpileTask(containerController);
+                let energyController = containerController.store[RESOURCE_ENERGY];
+                let energySpawn = _.sum([
+                    containerSpawn ? containerSpawn.store[RESOURCE_ENERGY] : 0,
+                    storageSpawn ? storageSpawn.store[RESOURCE_ENERGY] : 0,
+                ]);
+
+                if(energySpawn < room.energyCapacityAvailable) {
+                    if(containerSpawn && _.sum(containerSpawn.store) < containerSpawn.storeCapacity) {
+                        task = new DepositIntoStockpileTask(containerSpawn);
+                    } else if (storageSpawn && _.sum(storageSpawn.store) < storageSpawn.storeCapacity) {
+                        task = new DepositIntoStockpileTask(storageSpawn);
+                    } 
+                } else if (energyController < containerController.storeCapacity) {
+                    if(containerController) {
+                        task = new DepositIntoStockpileTask(containerController);
+                    }
                 } else {
-                    let fillable = this.getClosestFillable();
-                    task = new FillWithEnergyTask(fillable);
+                    if(storageSpawn) {
+                        task = new DepositIntoStockpileTask(storageSpawn);
+                    }
+                }
+
+                if(!task) {
+                    if (_.sum(creep.carry) < creep.carryCapacity) {
+                        creep.memory.working = false;
+                    } else {
+                        this.setSleep(25);
+                    }
                 }
             }
         }
