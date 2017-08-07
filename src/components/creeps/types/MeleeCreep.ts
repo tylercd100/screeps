@@ -2,56 +2,45 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-29 23:04:44
+* @Last Modified time: 2017-08-06 11:41:04
 */
 
 'use strict';
 
 import {Task, GotoRoomTask, AttackTask, GotoTargetTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
-import * as Plans from "./../../rooms/Plans";
 import * as Config from "./../../../config/config";
+import {Nest} from "./../../nest/Nest";
 
 export class MeleeCreep extends BaseCreep {
     protected handle(task: Task): Task {
 
         let creep = this.creep;
 
-        if(!task) {
+        let station = creep.memory.station
 
-            let enemy = creep.pos.findClosestByRange<Creep>(FIND_CREEPS, {
-                filter: function (creep: Creep) {
-                    return _.indexOf(Config.FRIENDS, creep.owner.username) < 0;
-                }
-            })
-            
-            if (enemy) {
-                task = new AttackTask(enemy);
-            } else {
-                let roomName;
-                if(!roomName) {
-                    roomName = this.getRoom(Plans.ATTACK);
-                }
-                if(!roomName) {
-                    roomName = this.getRoom(Plans.DEFEND);
-                }
-                if(!roomName) {
-                    roomName = this.getRoom(Plans.BASE);
-                }
+        if(station) {
+            if (creep.room.name === station) {
 
-
-                if(roomName) {
-                    if (creep.room.name === roomName) {
-                        let target = this.getClosestSpawn()
-                        if(target) {
-                            task = new GotoTargetTask(target)
-                        } else {
-                            creep.move(creep.pos.getDirectionTo(24, 24));
-                        }
-                    } else {
-                        task = new GotoRoomTask(roomName);
+                let enemyCreep = creep.pos.findClosestByRange<Creep>(FIND_HOSTILE_CREEPS, {
+                    filter: function (creep: Creep) {
+                        return _.indexOf(Config.FRIENDS, creep.owner.username) < 0;
                     }
+                })
+
+                let enemySpawn = creep.pos.findClosestByRange<Spawn>(FIND_HOSTILE_SPAWNS);
+
+                if ((enemyCreep || enemySpawn) && _.get(creep, "room.controller.safeMode", 0) === 0) {
+                    if(enemySpawn) {
+                        task = new AttackTask(enemySpawn);
+                    } else if (enemyCreep) {
+                        task = new AttackTask(enemyCreep);
+                    }
+                } else if(!task) {
+                    task = this.gotoRally();
                 }
+            } else if(!task) {
+                task = new GotoRoomTask(station);
             }
         }
 
@@ -64,16 +53,15 @@ export class MeleeCreep extends BaseCreep {
 
     static type: string = "melee";
 
-    static createCreep(room: Room, level: number): string|number|null {
-        const spawn = MeleeCreep.getSpawn(room);
-        const body = MeleeCreep.getBody(room, level);
+    static createCreep(spawn: Spawn, nest: Nest, level: number = 1): string|number|null {
+        const body = MeleeCreep.getBody(level);
         const name = MeleeCreep.getName();
-        const memory = MeleeCreep.getMemory(room);
+        const memory = MeleeCreep.getMemory(nest);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(room: Room): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(room), {
+    static getMemory(nest: Nest): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(nest), {
             type: MeleeCreep.type,
         });
     }
@@ -94,7 +82,7 @@ export class MeleeCreep extends BaseCreep {
      * @param  {Room}     room [description]
      * @return {string[]}      [description]
      */
-    static getBody(room: Room, level: number): string[] {
+    static getBody(level: number): string[] {
         switch (level) {
             case 1: // 300
                 return [ATTACK, ATTACK, MOVE, MOVE, TOUGH, TOUGH, TOUGH, TOUGH];

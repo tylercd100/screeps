@@ -2,13 +2,18 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-01 12:58:51
+<<<<<<< HEAD
+* @Last Modified time: 2017-08-06 20:16:03
+=======
+* @Last Modified time: 2017-08-05 23:33:45
+>>>>>>> d75c12d00daca4c3859b529846d088071176631a
 */
 
 'use strict';
 
-import {Task, WithdrawFromStockpileTask, DepositIntoStockpileTask, RenewTask} from "./../tasks/Tasks";
+import {Task, WithdrawFromStockpileTask, DepositIntoStockpileTask, FillWithEnergyTask, HarvestTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
+import {Nest} from "./../../nest/Nest";
 
 export class HaulerCreep extends BaseCreep {
     protected handle(task: Task): Task {
@@ -18,17 +23,30 @@ export class HaulerCreep extends BaseCreep {
         
         if(!task) {
             let spawn = this.getClosestSpawn();
-            let containerSpawn: StructureContainer|StructureStorage = null;
             let storageSpawn: StructureContainer|StructureStorage = null;
+            let containerSpawn: StructureContainer|StructureStorage|null = null;
+            let containerController: StructureContainer|null = null;
+            let linkSpawn = spawn.pos.findClosestByRange<StructureLink>(FIND_STRUCTURES, {filter: (s) => s.structureType === STRUCTURE_LINK});
             if(spawn) {
                 containerSpawn = this.getSpawnContainer(spawn)
                 storageSpawn = this.getSpawnStorage(spawn)
             }
-            let containerController: StructureContainer = controller.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
+            if(controller) {
+                containerController = controller.pos.findClosestByRange<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER});
+            }
             let containerResources: StructureContainer[] = room.find<StructureContainer>(FIND_STRUCTURES, {filter: (s: StructureContainer) => s.structureType===STRUCTURE_CONTAINER && s.id !== _.get(containerSpawn, "id") && s.id !== _.get(containerController, "id")});
             
             if(!creep.memory.working) {
-                task = new WithdrawFromStockpileTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
+                let resource = this.getClosestDroppedResource();
+                if (resource) {
+                    task = new HarvestTask(resource);
+                } else {
+                    if(linkSpawn && linkSpawn.energy > 0) {
+                        task = new WithdrawFromStockpileTask(linkSpawn);
+                    } else {
+                        task = new WithdrawFromStockpileTask(_.max(containerResources, (c) => c.store[RESOURCE_ENERGY]));
+                    }
+                }
             } else {
                 let energyController = containerController.store[RESOURCE_ENERGY];
                 let energySpawn = _.sum([
@@ -71,16 +89,15 @@ export class HaulerCreep extends BaseCreep {
 
     static type: string = "hauler";
 
-    static createCreep(room: Room, level: number = 1): string|number|null {
-        const spawn = HaulerCreep.getSpawn(room);
-        const body = HaulerCreep.getBody(room, level);
+    static createCreep(spawn: Spawn, nest: Nest, level: number = 1): string|number|null {
+        const body = HaulerCreep.getBody(level);
         const name = HaulerCreep.getName();
-        const memory = HaulerCreep.getMemory(room);
+        const memory = HaulerCreep.getMemory(nest);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(room: Room): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(room), {
+    static getMemory(nest: Nest): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(nest), {
             type: HaulerCreep.type,
         });
     }
@@ -89,7 +106,7 @@ export class HaulerCreep extends BaseCreep {
         return HaulerCreep.type+"-"+BaseCreep.getName();
     }
 
-    static getBody(room: Room, level: number = 1): string[] {
+    static getBody(level: number = 1): string[] {
         switch (level) {
             case 1: // 300
                 return [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];

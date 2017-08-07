@@ -2,13 +2,14 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-01 13:03:17
+* @Last Modified time: 2017-08-06 20:09:08
 */
 
 'use strict';
 
 import {Task, WithdrawFromStockpileTask, HarvestTask, GotoTargetTask, FillWithEnergyTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
+import {Nest} from "./../../nest/Nest";
 
 export class EnergizerCreep extends BaseCreep {
     protected handle(task: Task): Task {
@@ -17,23 +18,25 @@ export class EnergizerCreep extends BaseCreep {
         let spawn = this.getClosestSpawn();
         let containers = this.getStockpiles();
         let stockpileSpawn: StructureContainer|StructureStorage = this.getSpawnStockpile(spawn);
+        let linkSpawn = spawn.pos.findClosestByRange<StructureLink>(FIND_STRUCTURES, {filter: (s) => s.structureType === STRUCTURE_LINK});
 
         if(!task) {
             if(!creep.memory.working) {
-
                 if (containers.length === 0) {
                     task = new HarvestTask(this.getClosestSource());
+                } else if (linkSpawn && linkSpawn.energy > 0) {
+                    task = new WithdrawFromStockpileTask(linkSpawn, RESOURCE_ENERGY);
                 } else if (stockpileSpawn) {
                     task = new WithdrawFromStockpileTask(stockpileSpawn, RESOURCE_ENERGY);
                 } else {
-                    task = new GotoTargetTask(stockpileSpawn);
+                    // task = new GotoTargetTask(stockpileSpawn);
                 }
             } else {
                 let fillable = this.getClosestFillable();
 
                 if(creep.room.energyAvailable >= 300) {
                     let tower = this.getClosestTower();
-                    if((tower.energy < 300 && creep.carryCapacity > 150) || tower.energy < 25) {
+                    if(tower && ((tower.energy < 300 && creep.carryCapacity > 150) || tower.energy < 25)) {
                         fillable = tower;
                     }
                 }
@@ -41,7 +44,8 @@ export class EnergizerCreep extends BaseCreep {
                 if(fillable) {
                     task = new FillWithEnergyTask(fillable);
                 } else {
-                    this.setSleep(25);
+                    // task = new GotoTargetTask(stockpileSpawn);
+                    this.setSleep(5);
                 }
             }
         }
@@ -55,16 +59,15 @@ export class EnergizerCreep extends BaseCreep {
 
     static type: string = "energizer";
 
-    static createCreep(room: Room, level: number): string|number|null {
-        const spawn = EnergizerCreep.getSpawn(room);
-        const body = EnergizerCreep.getBody(room, level);
+    static createCreep(spawn: Spawn, nest: Nest, level: number = 1): string|number|null {
+        const body = EnergizerCreep.getBody(level);
         const name = EnergizerCreep.getName();
-        const memory = EnergizerCreep.getMemory(room);
+        const memory = EnergizerCreep.getMemory(nest);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(room: Room): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(room), {
+    static getMemory(nest: Nest): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(nest), {
             type: EnergizerCreep.type,
         });
     }
@@ -85,7 +88,7 @@ export class EnergizerCreep extends BaseCreep {
      * @param  {Room}     room [description]
      * @return {string[]}      [description]
      */
-    static getBody(room: Room, level: number): string[] {
+    static getBody(level: number): string[] {
         switch (level) {
             case 1: // 300
                 return [WORK, CARRY, CARRY, CARRY, MOVE];
@@ -93,8 +96,10 @@ export class EnergizerCreep extends BaseCreep {
                 return [WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE];
             case 3: // 800
             case 4:
-            default:
                 return [WORK, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];
+            case 5:
+            default:
+                return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE];            
         }
     }
 }

@@ -2,13 +2,14 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-07-31 10:18:48
+* @Last Modified time: 2017-08-01 14:17:06
 */
 
 'use strict';
 
 import {Task, DepositIntoStockpileTask, BuildTask, HarvestTask} from "./../tasks/Tasks";
 import {BaseCreep} from "./BaseCreep";
+import {Nest} from "./../../nest/Nest";
 
 export class MinerCreep extends BaseCreep {
     protected handle(task: Task): Task {
@@ -37,16 +38,15 @@ export class MinerCreep extends BaseCreep {
 
     static type: string = "miner";
 
-    static createCreep(room: Room, level: number = 1): string|number|null {
-        const spawn = MinerCreep.getSpawn(room);
-        const body = MinerCreep.getBody(room, level);
+    static createCreep(spawn: Spawn, nest: Nest, level: number = 1): string|number|null {
+        const body = MinerCreep.getBody(level);
         const name = MinerCreep.getName();
-        const memory = MinerCreep.getMemory(room);
+        const memory = MinerCreep.getMemory(nest);
         return spawn.createCreep(body, name, memory);
     }
 
-    static getMemory(room: Room): {[key: string]: any} {
-        return _.merge(BaseCreep.getMemory(room), {
+    static getMemory(nest: Nest): {[key: string]: any} {
+        return _.merge(BaseCreep.getMemory(nest), {
             type: MinerCreep.type,
         });
     }
@@ -55,7 +55,7 @@ export class MinerCreep extends BaseCreep {
         return MinerCreep.type+"-"+BaseCreep.getName();
     }
 
-    static getBody(room: Room, level: number = 1): string[] {
+    static getBody(level: number = 1): string[] {
         switch (level) {
             case 1: // 300
                 return [WORK, WORK, CARRY, MOVE];
