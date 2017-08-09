@@ -1,8 +1,8 @@
 import * as Config from "./config/config";
-import * as Profiler from "screeps-profiler";
+import {NestManager} from "./components/nest/NestManager";
 
-require("./components/creep.ts");
-require("./components/room.ts");
+import * as Profiler from "screeps-profiler";
+import { log } from "./lib/logger/log";
 
 // Any code written outside the `loop()` method is executed only when the
 // Screeps system reloads your script.
@@ -18,6 +18,8 @@ if (Config.USE_PROFILER) {
   Profiler.enable();
 }
 
+log.info(`loading revision: ${ __REVISION__ }`);
+
 function mloop() {
 
   // Check memory for null or out of bounds custom objects
@@ -28,14 +30,25 @@ function mloop() {
   // Clears any non-existing creep memory.
   for (const name in Memory.creeps) {
     if (!Game.creeps[name]) {
-      console.log("Clearing non-existing creep memory:", name);
+      log.info("Clearing non-existing creep memory:", name);
       delete Memory.creeps[name];
     }
 
     if (Game.creeps[name] && !Game.creeps[name].memory.nest) {
-      Game.creeps[name];
+      Game.creeps[name].memory.nest = "W77N32";
     }
   }
+
+  // Begin here
+  const nestManager = new NestManager(Memory.nests);
+  nestManager.run();
+
+  // for (const i in Game.rooms) {
+  //   const room: Room = Game.rooms[i];
+  //   (new RoomManager()).run(room);
+  //   // (new CreepManager()).run(room);
+  //   (new TowerManager()).run(room);
+  // }
 }
 
 /**
