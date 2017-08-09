@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-27 16:58:47
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-06 20:05:12
+* @Last Modified time: 2017-08-07 18:21:03
 */
 
 'use strict';
@@ -315,33 +315,32 @@ export class GotoRoomTask extends Task {
 			return Task.FAILED;
 		}
 
-		let pos = new RoomPosition(24,24,this.target);
+		let exits = creep.room.find<RoomPosition>(creep.room.findExitTo(this.target));
+		let pos: RoomPosition = exits[Math.floor(exits.length/2)];
 
+		if (!pos) {
+			pos = new RoomPosition(24,24, this.target);
+		}
 		if (!pos) {
 			return Task.FAILED;
 		}
 
-		// if(_.indexOf(pos.lookFor(LOOK_TERRAIN), "wall") >=0 ) {
-		// 	return Task.FAILED;
-		// }
-
-		if (creep.room.name === pos.roomName && pos.x !== 49 && pos.y !== 49 && pos.x !== 0 && pos.y !==0) {
+		if (creep.room.name === this.target) {
 			creep.move(creep.pos.getDirectionTo(pos));
 			return Task.DONE;
+		} else {
+			let x = creep.moveTo(pos, {reusePath: 10, maxRooms: 16});
+			if(x === ERR_NO_PATH) {
+				x = creep.move(creep.pos.getDirectionTo(pos));
+			}
+	    	switch (x) {
+	    		case ERR_NO_PATH:
+	    			return Task.FAILED;
+	    		case OK:
+	    		default:
+	        		return Task.IN_PROGRESS;
+	    	}
 		}
-
-
-		let x = creep.moveTo(pos, {reusePath: 10, maxRooms: 16});
-		if(x === ERR_NO_PATH) {
-			x = creep.move(creep.pos.getDirectionTo(pos));
-		}
-    	switch (x) {
-    		case ERR_NO_PATH:
-    			return Task.FAILED;
-    		case OK:
-    		default:
-        		return Task.IN_PROGRESS;
-    	}
 
 	}
 

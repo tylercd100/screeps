@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-26 22:52:14
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-06 20:09:08
+* @Last Modified time: 2017-08-07 11:05:56
 */
 
 'use strict';
@@ -18,6 +18,8 @@ export class EnergizerCreep extends BaseCreep {
         let spawn = this.getClosestSpawn();
         let containers = this.getStockpiles();
         let stockpileSpawn: StructureContainer|StructureStorage = this.getSpawnStockpile(spawn);
+        let stockpileAny = this.getClosestStockpileWithResource();
+        let haulersCount = _.filter(Game.creeps, (c) => {return c.memory.nest === creep.memory.name && c.memory.type === "hauler" && creep.ticksToLive > 50}).length;
         let linkSpawn = spawn.pos.findClosestByRange<StructureLink>(FIND_STRUCTURES, {filter: (s) => s.structureType === STRUCTURE_LINK});
 
         if(!task) {
@@ -26,9 +28,10 @@ export class EnergizerCreep extends BaseCreep {
                     task = new HarvestTask(this.getClosestSource());
                 } else if (linkSpawn && linkSpawn.energy > 0) {
                     task = new WithdrawFromStockpileTask(linkSpawn, RESOURCE_ENERGY);
-                } else if (stockpileSpawn) {
+                } else if (stockpileSpawn && haulersCount > 0) {
                     task = new WithdrawFromStockpileTask(stockpileSpawn, RESOURCE_ENERGY);
-                } else {
+                } else if (stockpileAny) {
+                    task = new WithdrawFromStockpileTask(stockpileAny, RESOURCE_ENERGY);
                     // task = new GotoTargetTask(stockpileSpawn);
                 }
             } else {

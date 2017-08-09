@@ -2,7 +2,7 @@
 * @Author: Tyler Arbon
 * @Date:   2017-07-31 19:58:29
 * @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-05 23:29:13
+* @Last Modified time: 2017-08-08 12:46:08
 */
 
 'use strict';
@@ -71,9 +71,13 @@ export interface INestRoom {
 }
 
 export interface INestRoomNeeds {
+	healer: number;
 	harvester: number;
 	melee: number;
-	[type: string]: number;
+	reserver: number;
+	range: number;
+	scout: number;
+	// hauler: number;
 }
 
 export class Nest implements INest {
@@ -143,8 +147,8 @@ export class Nest implements INest {
 			if(!_.get(room, "contains") || Game.time - room.contains.updated_at > 3000) {
 				room.plans.military = Plans.SCOUT;
 			} else if (!room.contains.safeMode && hasEnemyCreeps && !hasEnemyLairs && !hasEnemySpawn && (hasAllySpawn || hasMySpawn || hasMyCreeps || room.plans.industry === Plans.HARVEST_SOURCES)) {
-				room.plans.military = Plans.DEFEND;
-			} else if (!room.contains.safeMode && !hasEnemyTowers && !hasEnemyLairs && (hasEnemyController || hasEnemyCreeps || hasEnemySpawn)) {
+				room.plans.military = Plans.IGNORE;
+			} else if (!room.contains.safeMode && !hasEnemyTowers && !hasEnemyLairs && (hasEnemyCreeps || hasEnemySpawn)) {
 				if(room.plans.military !== Plans.PREPARE && room.plans.military !== Plans.ATTACK) {
 					room.plans.military = Plans.PREPARE;
 					if(oldMilitary !== room.plans.military)
@@ -160,7 +164,7 @@ export class Nest implements INest {
 
 			if(room.plans.industry !== Plans.BASE) {
 				// industry
-				if(cntHarvest < maxHarvest && hasSourcePoints && room.plans.military !== Plans.ATTACK && room.plans.military !== Plans.DEFEND) {
+				if(cntHarvest < maxHarvest && hasSourcePoints && room.plans.military !== Plans.ATTACK && room.plans.military !== Plans.DEFEND && !hasEnemyCreeps && !hasEnemyLairs && !hasEnemySpawn) {
 					room.plans.industry = Plans.HARVEST_SOURCES;
 					if(controller && !controller.my && _.get(controller, "reservation.ticksToEnd", 0) < 500) {
 						room.plans.military = Plans.RESERVE;
@@ -514,7 +518,7 @@ export class Nest implements INest {
 	}
 
 	getMilitaryTypes(): string[] {
-		return ["heal", "melee", "range"];
+		return ["healer", "melee", "range"];
 	}
 
 	protected isDonePreparing(room: INestRoom): boolean {
@@ -538,14 +542,29 @@ export class Nest implements INest {
 		return _.filter(Game.creeps, (c: Creep) => c.memory.type === type && c.memory.assigned === false).length;
 	}
 
+
+
 	protected getNeededCreepCounts(room: INestRoom, spawning: boolean): INestRoomNeeds {
 		return {
-			"heal": 0,
-			"harvester": this.getNeededHarvesterCreepCount(room, spawning),
-			"melee": this.getNeededMeleeCreepCount(room, spawning),
-			"range": this.getNeededRangeCreepCount(room, spawning),
-			"scout": _.min([Math.ceil(this.getNeededScoutCreepCount(room, spawning)/2), 4]),
-			"reserver": this.getNeededReserverCreepCount(room, spawning),
+			healer: 0,
+			// hauler: 0,
+			harvester: this.getNeededHarvesterCreepCount(room, spawning),
+			melee: this.getNeededMeleeCreepCount(room, spawning),
+			range: this.getNeededRangeCreepCount(room, spawning),
+			scout: this.getNeededScoutCreepCount(room, spawning),
+			reserver: this.getNeededReserverCreepCount(room, spawning),
+		}
+	}
+
+	protected getTotalNeededCreepCounts(spawning: boolean): INestRoomNeeds {
+		return {
+			healer: 0,
+			// hauler: 0,
+			harvester: this.getTotalNeededHarvesterCreepCount(spawning),
+			melee: this.getTotalNeededMeleeCreepCount(spawning),
+			range: this.getTotalNeededRangeCreepCount(spawning),
+			scout: _.min([Math.ceil(this.getTotalNeededScoutCreepCount(spawning)/2), 4]),
+			reserver: this.getTotalNeededReserverCreepCount(spawning),
 		}
 	}
 
@@ -751,17 +770,20 @@ export class Nest implements INest {
 
 				if (spawns.length) {
 
+					let needs = this.getTotalNeededCreepCounts(true);
+					console.log(needs.harvester)
+
 					let spawn = _.first(spawns);
 
-				    let melees     = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "melee" && creep.ticksToLive > 200});
-				    let ranges     = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "range" && creep.ticksToLive > 200});
-				    let scouts     = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "scout" && creep.ticksToLive > 200});
-				    let workers    = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "worker" && creep.ticksToLive > 200});
-				    let miners     = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "miner" && creep.ticksToLive > 200});
-				    let haulers    = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "hauler" && creep.ticksToLive > 200});
-				    let energizers = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "energizer" && creep.ticksToLive > 200});
-				    let harvesters = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "harvester" && creep.ticksToLive > 200});
-				    let reservers  = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "reserver" && creep.ticksToLive > 200});
+				    let melees     = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "melee" && creep.ticksToLive > 50});
+				    let ranges     = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "range" && creep.ticksToLive > 50});
+				    let scouts     = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "scout" && creep.ticksToLive > 50});
+				    let workers    = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "worker" && creep.ticksToLive > 50});
+				    let miners     = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "miner" && creep.ticksToLive > 50});
+				    let haulers    = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "hauler" && creep.ticksToLive > 50});
+				    let energizers = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "energizer" && creep.ticksToLive > 50});
+				    let harvesters = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "harvester" && creep.ticksToLive > 50});
+				    let reservers  = _.filter(Game.creeps, (creep) => {return creep.memory.nest === a.name && creep.memory.type === "reserver" && creep.ticksToLive > 50});
 
 				    let type:string|null = null;
 
@@ -770,10 +792,10 @@ export class Nest implements INest {
 				    } else {
 				    	// Tries to maintain a leveled rotation of these creep types
 				    	let rotation = [
-				    		{type: "harvester", count: harvesters.length/3, need: harvesters.length < this.getTotalNeededHarvesterCreepCount(true)},
-				    		{type: "reserver", count: reservers.length, need: reservers.length < this.getTotalNeededReserverCreepCount(true)},
-				    		{type: "melee", count: melees.length, need: melees.length < this.getTotalNeededMeleeCreepCount(true)},
-				    		{type: "range", count: ranges.length, need: ranges.length < this.getTotalNeededRangeCreepCount(true)},
+				    		{type: "harvester", count: harvesters.length/3, need: harvesters.length < needs.harvester},
+				    		{type: "reserver", count: reservers.length, need: reservers.length < needs.reserver},
+				    		{type: "melee", count: melees.length, need: melees.length < needs.melee},
+				    		{type: "range", count: ranges.length, need: ranges.length < needs.range},
 				    	];
 				    	let chosen = _.reduce(_.filter(rotation, {need: true}), (choice, item) => {
 				    		if(!choice || item.count<=choice.count) {
@@ -787,7 +809,7 @@ export class Nest implements INest {
 				    	}
 
 				    	// Standard
-				        if (scouts.length < this.getTotalNeededScoutCreepCount(true)) {
+				        if (scouts.length < needs.scout) {
 				        	type = "scout";
 				        }
 				        if (haulers.length < Math.ceil(containers.length/2)) {
