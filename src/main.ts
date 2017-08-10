@@ -19,7 +19,8 @@ if (Config.USE_PROFILER) {
 }
 
 function mloop() {
-
+  // Memory = JSON.parse(RawMemory.get());
+  
   // Check memory for null or out of bounds custom objects
   if (!Memory.uuid || Memory.uuid > 100) {
     Memory.uuid = 0;
@@ -36,6 +37,8 @@ function mloop() {
       Game.creeps[name];
     }
   }
+
+  // RawMemory.set(JSON.stringify(Memory));
 }
 
 /**

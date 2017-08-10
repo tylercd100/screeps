@@ -1,8 +1,8 @@
 /*
 * @Author: Tyler Arbon
 * @Date:   2017-08-09 17:58:52
-* @Last Modified by:   Tyler Arbon
-* @Last Modified time: 2017-08-09 20:34:14
+* @Last Modified by:   Tyler
+* @Last Modified time: 2017-08-09 22:59:55
 */
 
 'use strict';
@@ -12,6 +12,20 @@ import {Serializable, SerialRaw} from "./../traits";
 export class Party extends Serializable {
 	constructor(protected _name: string, protected _creeps: Creep[]) {
 		super();
+	}
+
+	goto(thing: RoomPosition | {pos: RoomPosition}) {
+		return _.map(this.creeps, (creep: Creep) => {
+			return creep.moveTo(thing);
+		});
+	}
+
+	gotoFlag(flag: Flag) {
+		return this.goto(flag);
+	}
+
+	gotoRoom(name: string) {
+		return this.goto(new RoomPosition(24, 24, name));
 	}
 
 	get creeps(): Creep[] {
@@ -34,9 +48,10 @@ export class Party extends Serializable {
 		}
 	}
 
-	// unserialize(data: SerialRaw): this {
-		
-	// 	return this;
-	// }
+	static unserialize(x: SerialRaw): Party {
+		let creeps: Creep[] = _.map(x.data.creeps, (id: string) => Game.getObjectById<Creep>(id));
+		let name: string = x.data.name;
+		return new Party(name, creeps);
+	}
 
 }
