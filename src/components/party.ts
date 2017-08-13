@@ -1,17 +1,18 @@
 /*
 * @Author: Tyler Arbon
 * @Date:   2017-08-09 17:58:52
-* @Last Modified by:   Tyler
-* @Last Modified time: 2017-08-09 22:59:55
+* @Last Modified by:   Tyler Arbon
+* @Last Modified time: 2017-08-11 17:29:03
 */
 
 'use strict';
 
-import {Serializable, SerialRaw} from "./../traits";
+import {Serializable, SerialRaw} from "./traits";
 
 export class Party extends Serializable {
 	constructor(protected _name: string, protected _creeps: Creep[]) {
 		super();
+		_.set(Game, "parties."+_name, this);
 	}
 
 	goto(thing: RoomPosition | {pos: RoomPosition}) {
@@ -33,6 +34,14 @@ export class Party extends Serializable {
 	}
 
 	get name(): string {
+		return this._name;
+	}
+
+	/*==============================
+	=            Memory            =
+	==============================*/
+
+	toString(): string {
 		return this._name;
 	}
 
